@@ -1,0 +1,47 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="addict" />
+          <option value="dashscope" />
+          <option value="datasets" />
+          <option value="fastapi" />
+          <option value="flagembedding" />
+          <option value="jieba" />
+          <option value="langchain" />
+          <option value="langchain-anthropic" />
+          <option value="langchain-community" />
+          <option value="langchain-text-splitters" />
+          <option value="langchain-unstructured" />
+          <option value="markdown" />
+          <option value="milvus-model" />
+          <option value="modelscope" />
+          <option value="notebook" />
+          <option value="ollama" />
+          <option value="openai" />
+          <option value="opencv-python" />
+          <option value="pandas" />
+          <option value="peft" />
+          <option value="pymilvus" />
+          <option value="pymupdf" />
+          <option value="pymysql" />
+          <option value="python-docx" />
+          <option value="python-pptx" />
+          <option value="ragas" />
+          <option value="rank-bm25" />
+          <option value="rapidocr-onnxruntime" />
+          <option value="redis" />
+          <option value="sentence-transformers" />
+          <option value="simplejson" />
+          <option value="sortedcontainers" />
+          <option value="torch" />
+          <option value="transformers" />
+          <option value="unstructured" />
+          <option value="uvicorn" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
