@@ -8,3 +8,6 @@
 hit_docs、security_level、latency；敏感字段写入前脱敏。
 """
 # TODO(T14 数据组): 结构化 JSON 日志，异步写入，预留 ELK/Loki 采集。
+
+import logging
+
