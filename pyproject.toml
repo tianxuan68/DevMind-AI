@@ -29,6 +29,8 @@ dependencies = [
     "locust>=2.40.0",
     "jwt>=1.4.0",
     "aiomysql>=0.3.2",
+    "milvus-model>=0.2.12",
+    "py2neo>=2021.2.4",
 ]
 
 [tool.uv]
