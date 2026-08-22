@@ -253,3 +253,29 @@ internal_kb_qa/data/open_source/*
 # 本地环境与密钥
 .env
 config.local.ini
+
+
+# ------------------------------------------------------------------
+# 依赖锁文件：按团队约定不提交仓库，环境由各自本地生成
+# 说明：若追求完全可复现构建，锁文件本应提交；此处遵循团队约定忽略
+# ------------------------------------------------------------------
+uv.lock
+Pipfile.lock
+poetry.lock
+pdm.lock
+pixi.lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# 常见依赖/构建产物目录（再次兜底，防止误提交）
+.venv/
+venv/
+env/
+node_modules/
+dist/
+build/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
