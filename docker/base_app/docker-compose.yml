@@ -1,0 +1,16 @@
+# T11: MySQL + 应用服务 compose 配置
+# 参考：E:/study_project/Itcast_qa_system/docker/base_app/docker-compose.yml
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-}
+      MYSQL_DATABASE: internal_tech_kb
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker/mysql:/var/lib/mysql
+
+  # app:
+  #   build: ../..
+  #   ports: ["8003:8003"]

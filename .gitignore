@@ -175,7 +175,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# pytype static type analyzer
+# pytype front type analyzer
 .pytype/
 
 # Cython debug symbols
@@ -216,3 +216,40 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# DevMind-AI 项目特定忽略项
+# 前端
+node_modules/
+front/dist/
+
+# 运行日志与容器日志
+logs/*
+docker_logs/*
+!logs/.gitkeep
+!docker_logs/.gitkeep
+
+# 模型权重（仅保留目录占位）
+rag_qa/models/*
+internal_kb_qa/models/*
+!rag_qa/models/*/.gitkeep
+!internal_kb_qa/models/*/.gitkeep
+!internal_kb_qa/models/README.md
+
+# Docker 数据卷
+docker/milvus_redis/volumes/*
+!docker/milvus_redis/volumes/*/
+!docker/milvus_redis/volumes/*/.gitkeep
+docker/base_app/docker/mysql/*
+!docker/base_app/docker/mysql/.gitkeep
+
+# 企业内部原始文档/开源评测数据不提交仓库
+internal_kb_qa/data/raw/*
+!internal_kb_qa/data/raw/.gitkeep
+!internal_kb_qa/data/raw/README.md
+internal_kb_qa/data/open_source/*
+!internal_kb_qa/data/open_source/.gitkeep
+
+# 本地环境与密钥
+.env
+config.local.ini
