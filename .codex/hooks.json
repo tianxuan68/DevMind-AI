@@ -1,0 +1,32 @@
+{
+  "description": "Minimal validation hooks for DevMind-AI.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".\\.venv\\Scripts\\python.exe .codex\\hooks\\verify.py stop",
+            "commandWindows": ".\\.venv\\Scripts\\python.exe .codex\\hooks\\verify.py stop",
+            "timeout": 180,
+            "statusMessage": "Running changed-code verification"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".\\.venv\\Scripts\\python.exe .codex\\hooks\\verify.py precommit",
+            "commandWindows": ".\\.venv\\Scripts\\python.exe .codex\\hooks\\verify.py precommit",
+            "timeout": 300,
+            "statusMessage": "Running pre-commit verification"
+          }
+        ]
+      }
+    ]
+  }
+}
