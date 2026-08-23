@@ -27,6 +27,14 @@ logger = logging.getLogger("internal_kb_qa.core.ticket_service")
 # 工单状态流转：pending -> in_progress -> resolved / closed
 TICKET_STATUS = ("pending", "in_progress", "resolved", "closed")
 
+# 工单状态中文标签（供 ticket_inquiry 意图查询展示）
+TICKET_STATUS_LABELS = {
+    "pending": "待处理",
+    "in_progress": "处理中",
+    "resolved": "已解决",
+    "closed": "已关闭",
+}
+
 _CREATE_TABLES = """
 CREATE TABLE IF NOT EXISTS tickets (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -191,6 +199,29 @@ class TicketService:
             logger.error("工单状态更新失败: %s", e)
             self.db.rollback()
             return False
+
+    def get_recent_tickets(self, user_id: str, limit: int = 3) -> list[dict]:
+        """查询用户最近工单（ticket_inquiry 意图使用）；MySQL 不可用时返回空列表。
+
+        返回元素：{ticket_no, reason, status, created_at}，按创建时间倒序。
+        """
+        if not self.db:
+            logger.warning("MySQL 不可用，无法查询工单")
+            return []
+        try:
+            with self.db.cursor() as cur:
+                cur.execute(
+                    """SELECT ticket_no, reason, status, created_at
+                       FROM tickets
+                       WHERE user_id = %s
+                       ORDER BY created_at DESC
+                       LIMIT %s""",
+                    (user_id, limit),
+                )
+                return cur.fetchall()
+        except pymysql.MySQLError as e:
+            logger.error("工单查询失败: %s", e)
+            return []
 
     # ---- 反馈 ----
 

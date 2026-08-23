@@ -6,17 +6,20 @@
 上游模块按任务分工文档约定的接口签名探测式接入：
 - T5 ``faq_match(query) -> FAQHit | None``（internal_kb_qa.core.faq_matcher）
 - T6 ``classify(query) -> Classification``（internal_kb_qa.core.intent_classifier）
+  七类：tech / access_request / incident / ticket_inquiry /
+  complaint_suggestion / policy_general / chitchat(=common)
 - T7 ``rag_answer(query, history, category, filter=None) -> RAGResult`` /
   ``rag_answer_stream(query, history, category, filter=None) -> Generator[dict]``
-  （internal_kb_qa.core.rag_generator；``filter`` 为 T8 注入的权限过滤条件，
-  T7 实现时必须接受并在检索链路强制使用，越权命中数必须为 0；
-  流式产出 token/end 事件，end 携带 sources/confidence）
+  （internal_kb_qa.core.rag_generator；``category`` 为 T6 七类之一，供检索策略
+  路由；``filter`` 为 T8 注入的权限过滤条件，T7 实现时必须接受并在检索链路
+  强制使用，越权命中数必须为 0；流式产出 token/end 事件，end 携带
+  sources/confidence）
 
 上游未交付时自动降级（规则意图分类 + FAQ 热缓存 + 转人工兜底），
 保证端到端契约可跑可测；算法组交付后无需改动 T8 调用方。
 
-职责：会话历史（Redis，最近 5 轮）、LLM 故障降级 FAQ 直回、低置信度/
-incident/complaint 自动建工单（ticket_service）。
+职责：会话历史（Redis，最近 5 轮）、LLM 故障降级 FAQ 直回、incident/
+投诉/低置信度自动建工单（ticket_service）、ticket_inquiry 工单进度查询。
 """
 import logging
 import re
@@ -45,16 +48,27 @@ CHITCHAT_PATTERNS = {
     "bye": r"^(再见|拜拜|88|bye)",
 }
 
-# T8 服务策略规则（独立于 T6 意图分类，保证验收硬指标）：
-# incident / complaint 不硬答、必须转人工建单；access_request 引导走审批流程。
-RULE_OVERRIDE_PATTERNS = {
-    "incident": ["故障", "宕机", "挂了", "事故", "数据丢失", "紧急", "生产环境", "不可用"],
-    "complaint": ["投诉", "差评", "不满意", "太差", "垃圾系统"],
-    "access_request": [r"申请.*权限", r"开通.*(账号|权限)", r"权限申请", r"授权"],
+# 意图分类降级规则（T6 交付前使用；命中即高置信度）。
+# 七类：tech / access_request / incident / ticket_inquiry /
+#       complaint_suggestion / policy_general / chitchat(=common 闲聊)
+# 顺序即优先级：先闲聊，再具体意图（故障/投诉优先），默认 tech 保守路由。
+RULE_CATEGORY_PATTERNS = {
+    "incident": ["故障", "宕机", "挂了", "事故", "数据丢失", "紧急", "生产环境", "不可用", "报障", "告警"],
+    "complaint_suggestion": ["投诉", "差评", "不满意", "太差", "垃圾系统", "吐槽", "建议", "意见", "改进"],
+    "access_request": [r"申请.*(权限|账号)", r"开通.*(账号|权限)", r"权限申请", r"账号申请", r"授权"],
+    "ticket_inquiry": [r"工单.*(进度|状态|查询|处理|到哪)", r"进度查询", r"我的工单", r"工单号"],
+    "policy_general": ["制度", "规范", "规定", "政策", "流程", "报销", "请假", "考勤", "规章制度"],
 }
 
+# 投诉关键词（complaint_suggestion 类内细分）：命中按投诉转人工建单，否则按建议致谢
+COMPLAINT_KEYWORDS = ("投诉", "差评", "不满意", "太差", "垃圾", "吐槽")
+
 ACCESS_REQUEST_REPLY = (
-    "权限申请请走内部权限审批流程：联系您的直属主管或系统管理员提交权限申请工单。"
+    "权限/账号申请请走内部审批流程：联系您的直属主管或系统管理员提交权限申请工单。"
+)
+
+SUGGESTION_REPLY = (
+    "感谢您的建议，我们已记录并将反馈给相关团队。如需进一步沟通，可在反馈中留下联系方式。"
 )
 
 
@@ -120,22 +134,19 @@ class IntegratedQASystem:
         return self._rule_classify(query)
 
     def _rule_classify(self, query: str) -> dict:
-        """两类降级分类：通用知识 / 专业咨询（与基线 QueryClassifier 对齐）。
+        """七类降级分类（T6 交付前使用）。
 
-        通用知识（闲聊等）直接模板回答不检索；低置信度按专业咨询保守路由
-        （契约：低于阈值按专业咨询处理）。
+        顺序：chitchat（闲聊）-> incident（故障）-> complaint_suggestion（投诉/建议）
+        -> access_request（权限/账号）-> ticket_inquiry（工单查询）
+        -> policy_general（制度）-> 默认 tech（低置信度保守路由）。
         """
         for pattern in CHITCHAT_PATTERNS.values():
             if re.match(pattern, query, re.IGNORECASE):
-                return {"category": "通用知识", "confidence": 0.9}
-        return {"category": "专业咨询", "confidence": 0.6}
-
-    def _check_override(self, query: str) -> str | None:
-        """服务策略规则：命中返回 incident / complaint / access_request，未命中返回 None。"""
-        for category, patterns in RULE_OVERRIDE_PATTERNS.items():
+                return {"category": "chitchat", "confidence": 0.9}
+        for category, patterns in RULE_CATEGORY_PATTERNS.items():
             if any(re.search(p, query) for p in patterns):
-                return category
-        return None
+                return {"category": category, "confidence": 0.9}
+        return {"category": "tech", "confidence": 0.6}
 
     # ---- 会话历史（Redis，最近 5 轮） ----
 
@@ -158,32 +169,56 @@ class IntegratedQASystem:
         source_filter: str | None,
         user: UserContext,
     ) -> QueryResult:
-        """非流式查询：通用知识 / FAQ 命中 / 兜底直接回答；需要 RAG 时标记流式。"""
+        """非流式查询：七类意图路由；需要 RAG 时标记流式。
+
+        路由：chitchat 模板直答 / incident 转人工建单 /
+        complaint_suggestion 投诉建单·建议致谢 / access_request 引导审批 /
+        ticket_inquiry 工单进度查询 / tech·policy_general FAQ -> RAG。
+        """
         if not session_id:
             session_id = str(uuid.uuid4())
-
-        # 服务策略规则优先：incident / complaint 转人工建单，access_request 引导
-        override = self._check_override(query)
-        if override in ("incident", "complaint"):
-            answer, need_human = self._human_fallback(query, session_id, user, override)
-            self._update_history(session_id, query, answer)
-            return QueryResult(answer=answer, is_streaming=False, need_human=need_human,
-                               session_id=session_id)
-        if override == "access_request":
-            self._update_history(session_id, query, ACCESS_REQUEST_REPLY)
-            return QueryResult(answer=ACCESS_REQUEST_REPLY, is_streaming=False,
-                               need_human=False, session_id=session_id)
-
         category = self._classify(query)["category"]
 
-        # 通用知识：模板直答，不检索
-        if category == "通用知识":
+        # 闲聊：模板直答，不检索
+        if category == "chitchat":
             answer = self._chitchat_reply(query)
             self._update_history(session_id, query, answer)
             return QueryResult(answer=answer, is_streaming=False, need_human=False,
                                session_id=session_id)
 
-        # 专业咨询：FAQ 精确匹配
+        # 故障上报：不硬答，转人工建单
+        if category == "incident":
+            answer, need_human = self._human_fallback(query, session_id, user, "incident")
+            self._update_history(session_id, query, answer)
+            return QueryResult(answer=answer, is_streaming=False, need_human=need_human,
+                               session_id=session_id)
+
+        # 投诉/建议：投诉转人工建单；建议致谢
+        if category == "complaint_suggestion":
+            if any(kw in query for kw in COMPLAINT_KEYWORDS):
+                answer, need_human = self._human_fallback(
+                    query, session_id, user, "complaint"
+                )
+            else:
+                answer, need_human = SUGGESTION_REPLY, False
+            self._update_history(session_id, query, answer)
+            return QueryResult(answer=answer, is_streaming=False, need_human=need_human,
+                               session_id=session_id)
+
+        # 权限/账号申请：引导审批流程（不走工单）
+        if category == "access_request":
+            self._update_history(session_id, query, ACCESS_REQUEST_REPLY)
+            return QueryResult(answer=ACCESS_REQUEST_REPLY, is_streaming=False,
+                               need_human=False, session_id=session_id)
+
+        # 工单/进度查询：查用户最近工单状态
+        if category == "ticket_inquiry":
+            answer = self._ticket_inquiry_reply(user)
+            self._update_history(session_id, query, answer)
+            return QueryResult(answer=answer, is_streaming=False, need_human=False,
+                               session_id=session_id)
+
+        # tech / policy_general：FAQ 精确匹配
         faq_hit = self._faq_match(query)
         if faq_hit:
             answer = faq_hit["answer"]
@@ -218,32 +253,53 @@ class IntegratedQASystem:
         if not session_id:
             session_id = str(uuid.uuid4())
         history = self._get_history(session_id)
-
-        # 服务策略规则优先：incident / complaint 转人工建单，access_request 引导
-        override = self._check_override(query)
-        if override in ("incident", "complaint"):
-            answer, need_human = self._human_fallback(query, session_id, user, override)
-            self._update_history(session_id, query, answer)
-            yield {"type": "token", "token": answer}
-            yield {"type": "end", "is_complete": True, "sources": [], "need_human": need_human}
-            return
-        if override == "access_request":
-            self._update_history(session_id, query, ACCESS_REQUEST_REPLY)
-            yield {"type": "token", "token": ACCESS_REQUEST_REPLY}
-            yield {"type": "end", "is_complete": True, "sources": [], "need_human": False}
-            return
-
         category = self._classify(query)["category"]
 
-        # 通用知识：模板直答，不检索
-        if category == "通用知识":
+        # 闲聊：模板直答，不检索
+        if category == "chitchat":
             answer = self._chitchat_reply(query)
             self._update_history(session_id, query, answer)
             yield {"type": "token", "token": answer}
             yield {"type": "end", "is_complete": True, "sources": [], "need_human": False}
             return
 
-        # 专业咨询：FAQ 命中即秒回
+        # 故障上报：不硬答，转人工建单
+        if category == "incident":
+            answer, need_human = self._human_fallback(query, session_id, user, "incident")
+            self._update_history(session_id, query, answer)
+            yield {"type": "token", "token": answer}
+            yield {"type": "end", "is_complete": True, "sources": [], "need_human": need_human}
+            return
+
+        # 投诉/建议：投诉转人工建单；建议致谢
+        if category == "complaint_suggestion":
+            if any(kw in query for kw in COMPLAINT_KEYWORDS):
+                answer, need_human = self._human_fallback(
+                    query, session_id, user, "complaint"
+                )
+            else:
+                answer, need_human = SUGGESTION_REPLY, False
+            self._update_history(session_id, query, answer)
+            yield {"type": "token", "token": answer}
+            yield {"type": "end", "is_complete": True, "sources": [], "need_human": need_human}
+            return
+
+        # 权限/账号申请：引导审批流程（不走工单）
+        if category == "access_request":
+            self._update_history(session_id, query, ACCESS_REQUEST_REPLY)
+            yield {"type": "token", "token": ACCESS_REQUEST_REPLY}
+            yield {"type": "end", "is_complete": True, "sources": [], "need_human": False}
+            return
+
+        # 工单/进度查询：查用户最近工单状态
+        if category == "ticket_inquiry":
+            answer = self._ticket_inquiry_reply(user)
+            self._update_history(session_id, query, answer)
+            yield {"type": "token", "token": answer}
+            yield {"type": "end", "is_complete": True, "sources": [], "need_human": False}
+            return
+
+        # tech / policy_general：FAQ 命中即秒回
         faq_hit = self._faq_match(query)
         if faq_hit:
             answer = faq_hit["answer"]
@@ -326,6 +382,19 @@ class IntegratedQASystem:
         if cached:
             return {"answer": cached, "source": "", "score": 1.0}
         return None
+
+    def _ticket_inquiry_reply(self, user: UserContext) -> str:
+        """工单/进度查询：返回用户最近工单状态；无工单时引导转人工。"""
+        from internal_kb_qa.core.ticket_service import TICKET_STATUS_LABELS
+
+        tickets = self.ticket_service.get_recent_tickets(user.user_id, limit=3)
+        if not tickets:
+            return "未查询到您的工单。如需人工帮助，可在反馈中勾选转人工，我们会尽快处理。"
+        lines = ["您最近的工单状态："]
+        for t in tickets:
+            label = TICKET_STATUS_LABELS.get(t["status"], t["status"])
+            lines.append(f"- {t['ticket_no']}（{t['reason']}）：{label}")
+        return "\n".join(lines)
 
     def _rag_stream(
         self, query: str, history: list, category: str, user: UserContext

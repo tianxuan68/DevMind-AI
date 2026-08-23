@@ -3,11 +3,16 @@
 对外接口：
     classify(query: str) -> Classification
 
-类别（两类，与基线 QueryClassifier 对齐）：
-    - 通用知识：闲聊/常识问题，直接 LLM 回答，不检索知识库
-    - 专业咨询：技术问题，走 FAQ 精确匹配 -> RAG 主链路
+类别（七类）：
+    - tech：技术咨询（环境配置、常见报错等），走 FAQ -> RAG 主链路
+    - access_request：权限/账号申请，引导审批流程
+    - incident：故障上报，不硬答，转人工建单
+    - ticket_inquiry：工单/进度查询，返回用户最近工单状态
+    - complaint_suggestion：投诉/建议；投诉转人工建单，建议致谢
+    - policy_general：制度类问题（制度/规范/报销/考勤等），走 FAQ -> RAG
+    - chitchat（= common）：闲聊，模板直答不检索
 
-低置信度按专业咨询保守路由（宁可不答，不错答）。
+低置信度按 tech 保守路由（宁可不答，不错答）。
 参考：rag_qa/core/bert_query_classifier/ 与 query_classifier.py
 """
-# TODO(T6 算法组): 微调 BERT；低置信度按专业咨询保守路由。
+# TODO(T6 算法组): 微调 BERT；低置信度按 tech 保守路由。

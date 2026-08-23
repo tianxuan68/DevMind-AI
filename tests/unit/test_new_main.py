@@ -43,23 +43,31 @@ class TestChat:
 
 
 class TestRuleClassify:
-    """T6 契约：两类（通用知识/专业咨询），与基线 QueryClassifier 对齐。"""
+    """T6 契约：七类意图分类。"""
 
-    def test_chitchat_is_general_knowledge(self, system):
-        result = system._classify("你好")
-        assert result["category"] == "通用知识"
-        assert result["confidence"] >= 0.9
-
-    def test_tech_question_is_professional(self, system):
-        result = system._classify("JVM 内存溢出怎么排查")
-        assert result["category"] == "专业咨询"
-
-    def test_override_detection(self, system):
-        """服务策略规则独立于分类：incident/complaint 转人工，access_request 引导。"""
-        assert system._check_override("生产环境宕机了") == "incident"
-        assert system._check_override("我要投诉") == "complaint"
-        assert system._check_override("申请数据库权限") == "access_request"
-        assert system._check_override("你好") is None
+    @pytest.mark.parametrize(
+        "query,category",
+        [
+            ("你好", "chitchat"),
+            ("你是谁", "chitchat"),
+            ("生产环境宕机了", "incident"),
+            ("线上数据库故障", "incident"),
+            ("我要投诉", "complaint_suggestion"),
+            ("这个系统太差了", "complaint_suggestion"),
+            ("建议增加夜间发布窗口", "complaint_suggestion"),
+            ("申请数据库权限", "access_request"),
+            ("我要开通测试账号", "access_request"),
+            ("我的工单处理到哪了", "ticket_inquiry"),
+            ("工单进度查询", "ticket_inquiry"),
+            ("请假制度是怎样的", "policy_general"),
+            ("报销流程是什么", "policy_general"),
+            ("JVM 内存溢出怎么排查", "tech"),
+        ],
+    )
+    def test_seven_categories(self, system, query, category):
+        result = system._classify(query)
+        assert result["category"] == category
+        assert result["confidence"] > 0
 
 
 class TestHumanFallback:
@@ -74,6 +82,13 @@ class TestHumanFallback:
         result = system.query_sync("这个系统太差了，我要投诉", None, None, USER)
         assert result.need_human is True
         assert system.redis.pop_ticket() is not None
+
+    def test_suggestion_no_ticket(self, system):
+        """建议类不建单，仅致谢。"""
+        result = system.query_sync("建议增加夜间发布窗口", None, None, USER)
+        assert result.need_human is False
+        assert "感谢" in result.answer
+        assert system.redis.pop_ticket() is None
 
     def test_low_confidence_rag_creates_ticket(self, system):
         """RAG 低置信度且无引用时必生成工单（验收硬指标）。"""
@@ -98,7 +113,7 @@ class TestHumanFallback:
 
         system.rag_answer = fake_rag_answer
         list(system.query_events("JVM 内存溢出怎么排查", None, None, USER))
-        assert captured["category"] == "专业咨询"
+        assert captured["category"] == "tech"
         assert captured["filter"] == {"team": "backend", "security_level": {"$lte": 1}}
 
     def test_rag_answer_stream_event_flow(self, system):
@@ -132,6 +147,42 @@ class TestAccessRequest:
         result = system.query_sync("我要申请数据库权限", None, None, USER)
         assert result.need_human is False
         assert "权限" in result.answer
+
+
+class TestTicketInquiry:
+    def test_no_ticket_guides_human(self, system):
+        result = system.query_sync("我的工单处理到哪了", None, None, USER)
+        assert result.need_human is False
+        assert "未查询到您的工单" in result.answer
+
+    def test_with_tickets_returns_status(self, system):
+        def fake_get_recent_tickets(user_id, limit=3):
+            return [
+                {"ticket_no": "TK20260823001", "reason": "incident", "status": "pending"},
+                {"ticket_no": "TK20260822005", "reason": "complaint", "status": "resolved"},
+            ]
+
+        system.ticket_service.get_recent_tickets = fake_get_recent_tickets
+        result = system.query_sync("工单进度查询", None, None, USER)
+        assert "TK20260823001" in result.answer
+        assert "待处理" in result.answer
+        assert "已解决" in result.answer
+
+
+class TestPolicyGeneral:
+    def test_policy_question_marks_streaming(self, system):
+        """制度类问题走 FAQ -> RAG 主链路（同 tech）。"""
+        result = system.query_sync("请假制度是怎样的", None, None, USER)
+        assert result.is_streaming is True
+
+    def test_policy_faq_hit(self, system):
+        def fake_faq_match(query):
+            return {"answer": "制度答案", "source": "制度手册", "score": 0.95}
+
+        system.faq_match = fake_faq_match
+        result = system.query_sync("报销流程是什么", None, None, USER)
+        assert result.answer == "制度答案"
+        assert result.sources[0]["title"] == "制度手册"
 
 
 class TestFaq:
