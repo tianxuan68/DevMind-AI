@@ -1,0 +1,1598 @@
+from_id,subject,to_id,object,relation
+1,编程规约,101,命名风格,包含
+1,编程规约,102,常量定义,包含
+1,编程规约,103,代码格式,包含
+1,编程规约,104,OOP规约,包含
+1,编程规约,105,日期时间,包含
+1,编程规约,106,集合处理,包含
+1,编程规约,107,并发处理,包含
+1,编程规约,108,控制语句,包含
+1,编程规约,109,注释规约,包含
+1,编程规约,110,前后端规约,包含
+1,编程规约,111,其他,包含
+2,异常日志,112,错误码,包含
+2,异常日志,113,异常处理,包含
+2,异常日志,114,日志规约,包含
+5,MySQL 数据库,115,建表规约,包含
+5,MySQL 数据库,116,索引规约,包含
+5,MySQL 数据库,117,SQL 语句,包含
+5,MySQL 数据库,118,ORM 映射,包含
+6,工程结构,119,应用分层,包含
+6,工程结构,120,二方库依赖,包含
+6,工程结构,121,服务器,包含
+101,命名风格,1001,【强制】命名不能以下划线或美元符号开头或结尾,包含
+101,命名风格,1002,【强制】命名禁用拼音与英文混用，也不得直接使用中文,包含
+101,命名风格,1003,【强制】代码与注释中避免歧视性或侮辱性词语,包含
+101,命名风格,1004,【强制】类名用 UpperCamelCase（DO/PO/DTO/BO/VO/UID 等除外）,包含
+101,命名风格,1005,【强制】方法名、参数、成员变量、局部变量统一 lowerCamelCase,包含
+101,命名风格,1006,【强制】常量全大写下划线分隔，语义完整,包含
+101,命名风格,1007,【强制】抽象类 Abstract/Base 开头、异常 Exception 结尾、测试类 Test 结尾,包含
+101,命名风格,1008,【强制】类型与中括号紧挨定义数组（int[] 而非 int []）,包含
+101,命名风格,1009,【强制】POJO 布尔变量不加 is 前缀,包含
+101,命名风格,1010,【强制】包名小写、点间单词单数且语义单一,包含
+101,命名风格,1011,【强制】避免父子类成员或不同代码块局部变量同名,包含
+101,命名风格,1012,【强制】杜绝不规范的英文缩写,包含
+101,命名风格,1013,【推荐】命名使用完整单词组合实现自解释,包含
+101,命名风格,1014,【推荐】表示类型的名词放词尾以提升辨识度,包含
+101,命名风格,1015,【推荐】使用设计模式时在命名中体现模式,包含
+101,命名风格,1016,【推荐】接口方法与属性不加修饰符，尽量不定义常量,包含
+101,命名风格,1017,【强制】Service/DAO 暴露接口，实现类用 Impl 后缀,包含
+101,命名风格,1018,【参考】枚举类带 Enum 后缀，成员全大写下划线,包含
+101,命名风格,1019,【参考】各层命名规约：方法 get/list/count/save/remove/update，模型 xxxDO/DTO/VO,包含
+102,常量定义,1020,【强制】禁止魔法值直接出现在代码中,包含
+102,常量定义,1021,【强制】long 字面量后缀用大写 L,包含
+102,常量定义,1022,【强制】浮点数字面量后缀统一大写 D/F,包含
+102,常量定义,1023,【推荐】常量按功能归类，不搞大而全常量类,包含
+102,常量定义,1024,【推荐】常量分五层复用：跨应用/应用内/子工程/包内/类内,包含
+102,常量定义,1025,【推荐】固定范围取值用 enum 定义,包含
+103,代码格式,1026,【强制】大括号换行规范：左括号前不换行后换行，右括号前换行,包含
+103,代码格式,1027,【强制】小括号与相邻字符不加空格，大括号前加空格,包含
+103,代码格式,1028,【强制】if/for/while/switch/do 等保留字与括号间加空格,包含
+103,代码格式,1029,【强制】双目/三目运算符两侧加空格,包含
+103,代码格式,1030,【强制】4 空格缩进，禁用 Tab,包含
+103,代码格式,1031,【强制】注释 // 与内容间有且仅有一个空格,包含
+103,代码格式,1032,【强制】强转右括号与转换值间不加空格,包含
+103,代码格式,1033,【强制】单行不超过 120 字符，按规范换行,包含
+103,代码格式,1034,【强制】方法参数逗号后加空格,包含
+103,代码格式,1035,【强制】编码 UTF-8，换行符用 Unix 格式,包含
+103,代码格式,1036,【推荐】单个方法总行数不超过 80 行,包含
+103,代码格式,1037,【推荐】无需为对齐等号额外加空格,包含
+103,代码格式,1038,【推荐】不同逻辑/语义/业务代码间插入一个空行,包含
+104,OOP规约,1039,【强制】用类名访问静态成员，不用对象引用,包含
+104,OOP规约,1040,【强制】覆写方法必须加 @Override,包含
+104,OOP规约,1041,【强制】可变参数限定相同类型/业务含义，避免定义为 Object,包含
+104,OOP规约,1042,【强制】接口签名不可修改，过时加 @Deprecated,包含
+104,OOP规约,1043,【强制】禁止使用过时的类或方法,包含
+104,OOP规约,1044,【强制】equals 用常量或有值对象调用，防 NPE,包含
+104,OOP规约,1045,【强制】整型包装类对象值比较用 equals,包含
+104,OOP规约,1046,【强制】货币金额以最小货币单位且整型存储,包含
+104,OOP规约,1047,【强制】浮点等值判断用误差范围或 BigDecimal 比较,包含
+104,OOP规约,1048,【强制】BigDecimal 等值比较用 compareTo 而非 equals,包含
+104,OOP规约,1049,【强制】DO 类属性类型与数据库字段类型匹配,包含
+104,OOP规约,1050,【强制】禁止用 BigDecimal(double) 构造,包含
+104,OOP规约,1051,【强制】POJO/RPC 用包装类型，局部变量用基本类型,包含
+104,OOP规约,1052,【强制】POJO 类不设属性默认值,包含
+104,OOP规约,1053,【强制】序列化类新增属性不改 serialVersionUID,包含
+104,OOP规约,1054,【强制】构造方法禁止业务逻辑，初始化逻辑放 init,包含
+104,OOP规约,1055,【强制】POJO 必须写 toString，继承时加 super.toString(),包含
+104,OOP规约,1056,【强制】禁止同属性 isXxx() 与 getXxx() 并存,包含
+104,OOP规约,1057,【推荐】split 后按索引访问需检查末尾空内容,包含
+104,OOP规约,1058,【推荐】多个构造方法/同名方法按序放置,包含
+104,OOP规约,1059,【推荐】方法顺序：公有/保护 > 私有 > getter/setter,包含
+104,OOP规约,1060,【推荐】setter 用 this 赋值，getter/setter 不加业务逻辑,包含
+104,OOP规约,1061,【推荐】循环内字符串拼接用 StringBuilder,包含
+104,OOP规约,1062,【推荐】final 的适用场景（不可继承/修改/覆写/重赋值）,包含
+104,OOP规约,1063,【推荐】慎用 clone（默认浅拷贝）,包含
+104,OOP规约,1064,【推荐】类成员与方法访问控制从严,包含
+105,日期时间,1065,【强制】日期格式化年份用小写 y（非大写 YYYY）,包含
+105,日期时间,1066,【强制】分清 M 月/m 分、H 24 小时/h 12 小时,包含
+105,日期时间,1067,【强制】当前毫秒用 System.currentTimeMillis(),包含
+105,日期时间,1068,【强制】禁用 java.sql.Date/Time/Timestamp,包含
+105,日期时间,1069,【强制】不写死一年 365 天，需处理闰年,包含
+105,日期时间,1070,【推荐】避免公历闰年 2 月 29 日问题,包含
+105,日期时间,1071,【推荐】月份用枚举，注意 month 从 0 起,包含
+106,集合处理,1072,【强制】覆写 equals 必须覆写 hashCode（Set/Map 键）,包含
+106,集合处理,1073,【强制】集合判空用 isEmpty() 而非 size()==0,包含
+106,集合处理,1074,【强制】toMap() 需传 mergeFunction 防同 key 异常,包含
+106,集合处理,1075,【强制】toMap() 注意 value 为 null 抛 NPE,包含
+106,集合处理,1076,【强制】subList 结果不可强转 ArrayList,包含
+106,集合处理,1077,【强制】keySet/values/entrySet 视图不可增删元素,包含
+106,集合处理,1078,【强制】emptyList/singletonList 等不可变集合不可增删,包含
+106,集合处理,1079,【强制】subList 场景注意父集合增删引发并发修改异常,包含
+106,集合处理,1080,【强制】集合转数组用 toArray(new T[0]),包含
+106,集合处理,1081,【强制】addAll() 对输入集合做 NPE 判断,包含
+106,集合处理,1082,【强制】Arrays.asList() 转换的集合不可增删,包含
+106,集合处理,1083,【强制】<? extends T> 不能 add，<? super T> 不能 get,包含
+106,集合处理,1084,【强制】泛型混用时元素需 instanceof 判断,包含
+106,集合处理,1085,【强制】foreach 中不增删元素，用 iterator（并发需加锁）,包含
+106,集合处理,1086,【强制】Comparator 需满足自反/传递/对称三条件,包含
+106,集合处理,1087,【推荐】泛型集合用 diamond 语法或全省略,包含
+106,集合处理,1088,【推荐】集合初始化指定初始容量,包含
+106,集合处理,1089,【推荐】遍历 Map 用 entrySet 而非 keySet,包含
+106,集合处理,1090,【推荐】注意各 Map 对 null 键值的支持差异,包含
+106,集合处理,1091,【参考】合理利用集合的有序性与稳定性,包含
+106,集合处理,1092,【参考】利用 Set 唯一性去重，避免 List.contains 遍历,包含
+107,并发处理,1093,【强制】单例对象及其方法须线程安全,包含
+107,并发处理,1094,【强制】线程/线程池指定有意义的名称,包含
+107,并发处理,1095,【强制】线程须经线程池创建，不显式 new 线程,包含
+107,并发处理,1096,【强制】用 ThreadPoolExecutor 而非 Executors,包含
+107,并发处理,1097,【强制】SimpleDateFormat 勿 static，需加锁或用 DateUtils,包含
+107,并发处理,1098,【强制】自定义 ThreadLocal 用 try-finally 回收,包含
+107,并发处理,1099,【强制】高并发尽量无锁/锁区块，减小锁开销,包含
+107,并发处理,1100,【强制】多资源加锁保持顺序一致防死锁,包含
+107,并发处理,1101,【强制】阻塞加锁 lock() 放在 try 块外,包含
+107,并发处理,1102,【强制】tryLock 后先判断是否持锁再进业务,包含
+107,并发处理,1103,【强制】并发更新同一记录用乐观锁(version),包含
+107,并发处理,1104,【强制】定时任务用 ScheduledExecutorService 而非 Timer,包含
+107,并发处理,1105,【推荐】资金等金融敏感信息用悲观锁,包含
+107,并发处理,1106,【推荐】CountDownLatch 须保证每个线程 countDown,包含
+107,并发处理,1107,【推荐】Random 实例勿多线程共享,包含
+107,并发处理,1108,【推荐】双重检查锁目标属性声明 volatile,包含
+107,并发处理,1109,【参考】volatile 仅适合一写多读，多写不保证,包含
+107,并发处理,1110,【参考】规避 HashMap 高并发 resize 死链风险,包含
+107,并发处理,1111,【参考】ThreadLocal 用 static 修饰，不解决共享对象更新,包含
+108,控制语句,1112,【强制】switch 含 default 且放最后，case 需终止或注释,包含
+108,控制语句,1113,【强制】switch 的 String 外部参数先判 null,包含
+108,控制语句,1114,【强制】if/else/for/while/do 必须使用大括号,包含
+108,控制语句,1115,【强制】三目运算符注意类型对齐导致的拆箱 NPE,包含
+108,控制语句,1116,【强制】高并发用区间判断替代等于判断作中断条件,包含
+108,控制语句,1117,【推荐】方法超 10 行时 return/throw 后加空行,包含
+108,控制语句,1118,【推荐】异常分支少用 if-else，用卫语句/策略/状态模式,包含
+108,控制语句,1119,【推荐】复杂判断先赋布尔变量，不在条件中执行,包含
+108,控制语句,1120,【推荐】不在其他表达式（尤其条件）中插入赋值,包含
+108,控制语句,1121,【推荐】循环体内重操作尽量移到循环外,包含
+108,控制语句,1122,【推荐】避免取反逻辑运算符,包含
+108,控制语句,1123,【推荐】公开接口（尤其批量操作）入参保护,包含
+108,控制语句,1124,【参考】需要参数校验的场景,包含
+108,控制语句,1125,【参考】可不做参数校验的场景,包含
+109,注释规约,1126,【强制】类/属性/方法注释用 Javadoc /** */ 格式,包含
+109,注释规约,1127,【强制】抽象方法须用 Javadoc 说明功能,包含
+109,注释规约,1128,【强制】所有类必须注明创建者和创建日期,包含
+109,注释规约,1129,【强制】方法内单行 // 另起一行，多行用 /* */,包含
+109,注释规约,1130,【强制】枚举类型字段必须注释说明用途,包含
+109,注释规约,1131,【推荐】注释用中文说清，专有名词保留英文,包含
+109,注释规约,1132,【推荐】改代码同步更新注释,包含
+109,注释规约,1133,【推荐】删除未使用的字段/方法/参数/内部类,包含
+109,注释规约,1134,【参考】谨慎注释代码，无用则删除,包含
+109,注释规约,1135,【参考】注释准确反映设计思想与业务含义,包含
+109,注释规约,1136,【参考】注释精简，好命名自解释,包含
+109,注释规约,1137,【参考】TODO/FIXME 注明标记人与标记时间,包含
+110,前后端规约,1138,【强制】API 明确协议/域名/路径/方法/内容/状态码/响应体,包含
+110,前后端规约,1139,【强制】空列表接口返回空数组 [] 或空集合 {},包含
+110,前后端规约,1140,【强制】错误响应含 HTTP 状态码/errorCode/errorMessage/用户提示,包含
+110,前后端规约,1141,【强制】JSON 的 key 用 lowerCamelCase,包含
+110,前后端规约,1142,【强制】errorMessage 用于前后端错误追踪,包含
+110,前后端规约,1143,【强制】超大整数用 String 返回，禁止 Long,包含
+110,前后端规约,1144,【强制】URL 传参不超过 2048 字节,包含
+110,前后端规约,1145,【强制】body 传参必须控制长度,包含
+110,前后端规约,1146,【强制】翻页参数越界做首/末页处理,包含
+110,前后端规约,1147,【强制】内部重定向用 forward，外部用 URL 代理,包含
+110,前后端规约,1148,【推荐】返回信息标记是否可缓存,包含
+110,前后端规约,1149,【推荐】返回数据用 JSON 而非 XML,包含
+110,前后端规约,1150,【推荐】时间格式统一 yyyy-MM-dd HH:mm:ss（GMT）,包含
+110,前后端规约,1151,【参考】版本号放 HTTP 头而非路径,包含
+111,其他,1152,【强制】正则表达式利用预编译提升匹配速度,包含
+111,其他,1153,【强制】避免用 ApacheBeanUtils 做属性拷贝,包含
+111,其他,1154,【强制】velocity 调用 POJO 直接用属性名取值,包含
+111,其他,1155,【强制】后台输送给页面的变量加 $!{var},包含
+111,其他,1156,【强制】随机整数用 Random 的 nextInt/nextLong,包含
+111,其他,1157,【强制】枚举的属性字段私有且不可变,包含
+111,其他,1158,【推荐】视图模板中不加复杂逻辑,包含
+111,其他,1159,【推荐】数据结构构造/初始化指定大小,包含
+111,其他,1160,【推荐】及时清理不再使用的代码/配置,包含
+112,错误码,1161,【强制】错误码原则：快速溯源、沟通标准化,包含
+112,错误码,1162,【强制】错误码不体现版本号和错误等级,包含
+112,错误码,1163,【强制】正常但需填错误码时返回 00000,包含
+112,错误码,1164,【强制】错误码为 5 位字符串：来源 + 四位编号,包含
+112,错误码,1165,【强制】编号先到先得、审批后永久固定,包含
+112,错误码,1166,【强制】避免随意定义新错误码，复用已有,包含
+112,错误码,1167,【强制】错误码不能直接输出给用户,包含
+112,错误码,1168,【推荐】业务信息由 error_message 承载,包含
+112,错误码,1169,【推荐】第三方错误码转义并保留原码,包含
+112,错误码,1170,【参考】错误码分一/二/三级宏观错误码,包含
+112,错误码,1171,【参考】错误码后三位与 HTTP 状态码无关,包含
+112,错误码,1172,【参考】错误码利于跨文化协作,包含
+112,错误码,1173,【参考】纯数字错误码不利于感性记忆与分类,包含
+113,异常处理,1174,【强制】可预检查规避的 RuntimeException 用判断而非 catch,包含
+113,异常处理,1175,【强制】异常不用于流程/条件控制,包含
+113,异常处理,1176,【强制】catch 区分稳定/非稳定代码，区分异常类型,包含
+113,异常处理,1177,【强制】捕获异常必须处理或上抛给调用者,包含
+113,异常处理,1178,【强制】事务场景 catch 后需手动回滚,包含
+113,异常处理,1179,【强制】finally 必须关闭资源对象,包含
+113,异常处理,1180,【强制】finally 中禁止 return,包含
+113,异常处理,1181,【强制】捕获异常须完全匹配或为其父类,包含
+113,异常处理,1182,【强制】调 RPC/二方包/动态生成类用 Throwable 拦截,包含
+113,异常处理,1183,【推荐】返回值可为 null 时须注释说明,包含
+113,异常处理,1184,【推荐】注意防止 NPE 的常见场景,包含
+113,异常处理,1185,【推荐】使用有业务含义的自定义异常,包含
+113,异常处理,1186,【参考】对外 http/api 用错误码，内部用异常，RPC 用 Result,包含
+114,日志规约,1187,【强制】用门面日志框架（SLF4J/JCL），不用实现类 API,包含
+114,日志规约,1188,【强制】日志至少保存 15 天，并规范命名,包含
+114,日志规约,1189,【强制】安全相关日志不少于 6 个月并多机备份,包含
+114,日志规约,1190,【强制】扩展日志命名 appName_logType_logName.log,包含
+114,日志规约,1191,【强制】日志字符串拼接用占位符,包含
+114,日志规约,1192,【强制】trace/debug/info 输出前做级别开关判断,包含
+114,日志规约,1193,【强制】避免重复打印，设 additivity=false,包含
+114,日志规约,1194,【强制】生产禁 System.out/err 和 printStackTrace,包含
+114,日志规约,1195,【强制】异常日志含案发现场与堆栈信息,包含
+114,日志规约,1196,【强制】日志禁止直接用 JSON 工具转对象,包含
+114,日志规约,1197,【推荐】谨慎记录日志，生产禁 debug,包含
+114,日志规约,1198,【推荐】用户参数错误用 warn 级别,包含
+114,日志规约,1199,【推荐】日志错误信息尽量英文描述,包含
+114,日志规约,1200,【推荐】日志中用户敏感信息脱敏,包含
+115,建表规约,1228,【强制】是与否字段用 is_xxx + unsigned tinyint,包含
+115,建表规约,1229,【强制】表名/字段名小写，禁止数字开头,包含
+115,建表规约,1230,【强制】表名不使用复数,包含
+115,建表规约,1231,【强制】禁用 MySQL 保留字,包含
+115,建表规约,1232,【强制】索引名用 pk_/uk_/idx_ 前缀,包含
+115,建表规约,1233,【强制】小数类型用 decimal，禁用 float/double,包含
+115,建表规约,1234,【强制】等长字符串用 char,包含
+115,建表规约,1235,【强制】varchar 不超过 5000，超长用 text 分表,包含
+115,建表规约,1236,【强制】表必备 id/create_time/update_time 三字段,包含
+115,建表规约,1237,【强制】用逻辑删除，不用物理删除,包含
+115,建表规约,1238,【推荐】表名遵循“业务名称_表的作用”,包含
+115,建表规约,1239,【推荐】库名与应用名一致,包含
+115,建表规约,1240,【推荐】修改字段含义及时更新注释,包含
+115,建表规约,1241,【推荐】字段适当冗余（非频繁改/非唯一索引/非超长）,包含
+115,建表规约,1242,【推荐】超 500 万行或 2GB 才分库分表,包含
+115,建表规约,1243,【参考】合适字符长度提升检索速度,包含
+116,索引规约,1244,【强制】唯一特性字段建唯一索引,包含
+116,索引规约,1245,【强制】超三表禁 join，join 字段类型一致且建索引,包含
+116,索引规约,1246,【强制】varchar 建索引必须指定长度,包含
+116,索引规约,1247,【强制】页面搜索禁左模糊/全模糊,包含
+116,索引规约,1248,【推荐】order by 利用索引有序性避免 filesort,包含
+116,索引规约,1249,【推荐】利用覆盖索引避免回表,包含
+116,索引规约,1250,【推荐】延迟关联/子查询优化深分页,包含
+116,索引规约,1251,【推荐】SQL 优化目标达到 range 以上（ref/const）,包含
+116,索引规约,1252,【推荐】组合索引区分度最高的在最左,包含
+116,索引规约,1253,【推荐】防止隐式转换导致索引失效,包含
+116,索引规约,1254,【参考】避免索引宁滥勿缺/吝啬/抵制唯一索引等误解,包含
+117,SQL 语句,1255,【强制】统计行数用 count(*),包含
+117,SQL 语句,1256,【强制】count(distinct 多列) 含 NULL 时注意返回 0,包含
+117,SQL 语句,1257,【强制】sum 全 NULL 列返回 NULL，需防 NPE,包含
+117,SQL 语句,1258,【强制】用 ISNULL() 判断 NULL 值,包含
+117,SQL 语句,1259,【强制】分页 count 为 0 直接返回,包含
+117,SQL 语句,1260,【强制】禁止外键与级联，外键概念在应用层解决,包含
+117,SQL 语句,1261,【强制】禁止使用存储过程,包含
+117,SQL 语句,1262,【强制】数据订正先 select 确认再更新,包含
+117,SQL 语句,1263,【强制】多表操作列名前加表别名限定,包含
+117,SQL 语句,1264,【推荐】表别名前加 as，按 t1/t2/t3 命名,包含
+117,SQL 语句,1265,【推荐】in 集合元素控制在 1000 以内,包含
+117,SQL 语句,1266,【参考】字符存储统一 utf8mb4 字符集,包含
+117,SQL 语句,1267,【参考】不建议使用 TRUNCATE TABLE,包含
+118,ORM 映射,1268,【强制】查询禁 select *，明确字段列表,包含
+118,ORM 映射,1269,【强制】布尔字段在 resultMap 中做 is_xxx 映射,包含
+118,ORM 映射,1270,【强制】用 <resultMap> 而非 resultClass,包含
+118,ORM 映射,1271,【强制】sql.xml 用 #{} 防 SQL 注入,包含
+118,ORM 映射,1272,【强制】不推荐 queryForList 分页,包含
+118,ORM 映射,1273,【强制】查询结果集不用 HashMap/Hashtable,包含
+118,ORM 映射,1274,【强制】更新记录同时更新 update_time,包含
+118,ORM 映射,1275,【推荐】更新只改目标字段，不写大而全接口,包含
+118,ORM 映射,1276,【参考】勿滥用 @Transactional 事务,包含
+118,ORM 映射,1277,【参考】isEqual/isNotEmpty/isNotNull 动态标签语义,包含
+119,应用分层,1278,【推荐】分层结构（开放API/显示/Web/Service/Manager/DAO/第三方/外部数据）,包含
+119,应用分层,1279,【参考】分层异常处理规约,包含
+119,应用分层,1280,【参考】分层领域模型 DO/DTO/BO/Query/VO,包含
+120,二方库依赖,1281,【强制】GAV 定义规范（GroupId 最多 4 级）,包含
+120,二方库依赖,1282,【强制】版本号主.次.修订三段式命名,包含
+120,二方库依赖,1283,【强制】线上禁依赖 SNAPSHOT，RELEASE 不覆盖,包含
+120,二方库依赖,1284,【强制】二方库升级保持 jar 仲裁结果不变,包含
+120,二方库依赖,1285,【强制】二方库接口返回值不用枚举类型,包含
+120,二方库依赖,1286,【强制】定制包命名加“-英文说明[序号]”,包含
+120,二方库依赖,1287,【强制】依赖二方库群定义统一版本变量,包含
+120,二方库依赖,1288,【强制】禁止相同 GroupId/ArtifactId 不同 Version,包含
+120,二方库依赖,1289,【推荐】底层框架谨慎引入第三方实现,包含
+120,二方库依赖,1290,【推荐】依赖放 dependencies，版本仲裁放 dependencyManagement,包含
+120,二方库依赖,1291,【推荐】二方库不增配置项,包含
+120,二方库依赖,1292,【推荐】不使用不稳定的工具包/Utils,包含
+120,二方库依赖,1293,【参考】二方库发布遵循精简/记录/行为稳定三原则,包含
+121,服务器,1294,【强制】远程调用必须设置超时,包含
+121,服务器,1295,【推荐】客户端设置超时，明确生效顺序,包含
+121,服务器,1296,【推荐】高并发服务器调小 time_wait,包含
+121,服务器,1297,【推荐】调大最大文件句柄数,包含
+121,服务器,1298,【推荐】JVM 加 HeapDumpOnOutOfMemoryError,包含
+121,服务器,1299,【推荐】Xms 与 Xmx 设置相同大小,包含
+121,服务器,1300,【推荐】独立线程池隔离慢服务,包含
+121,服务器,1301,【参考】重定向用 forward/URL Broker,包含
+3,单元测试,1201,【强制】单元测试遵守 AIR 原则（自动化/独立/可重复）,包含
+3,单元测试,1202,【强制】单测全自动非交互，用 assert 验证,包含
+3,单元测试,1203,【强制】单测用例保持独立，不互相调用,包含
+3,单元测试,1204,【强制】单测可重复执行，不受外界环境影响,包含
+3,单元测试,1205,【强制】单测粒度小（类级或方法级）,包含
+3,单元测试,1206,【强制】核心业务增量代码单测通过,包含
+3,单元测试,1207,【强制】单测代码放 src/test/java,包含
+3,单元测试,1208,【推荐】语句覆盖率 70%，核心模块 100%,包含
+3,单元测试,1209,【推荐】单测遵守 BCDE 原则,包含
+3,单元测试,1210,【推荐】用程序插入/导入方式准备测试数据,包含
+3,单元测试,1211,【推荐】数据库单测自动回滚或加前后缀标识,包含
+3,单元测试,1212,【推荐】重构不可测代码使之可测,包含
+3,单元测试,1213,【推荐】设计评审确定单测范围,包含
+3,单元测试,1214,【推荐】提测前完成单元测试,包含
+3,单元测试,1215,【参考】便于单测的代码习惯（构造/全局/依赖/条件精简）,包含
+3,单元测试,1216,【参考】澄清对单元测试的常见误解,包含
+4,安全规约,1217,【强制】用户个人页面/功能必须权限校验,包含
+4,安全规约,1218,【强制】敏感数据脱敏展示,包含
+4,安全规约,1219,【强制】参数绑定防 SQL 注入,包含
+4,安全规约,1220,【强制】用户请求参数必须有效性验证,包含
+4,安全规约,1221,【强制】防 XSS，禁止输出未转义用户数据,包含
+4,安全规约,1222,【强制】表单/AJAX 做 CSRF 安全验证,包含
+4,安全规约,1223,【强制】外部重定向目标做白名单过滤,包含
+4,安全规约,1224,【强制】平台资源防重放（限频/验证码）,包含
+4,安全规约,1225,【强制】文件上传严格检查大小与类型,包含
+4,安全规约,1226,【强制】配置文件密码加密,包含
+4,安全规约,1227,【推荐】内容场景做防刷与违禁词过滤,包含
+7,设计规约,1302,【强制】存储方案与数据结构设计评审通过并成文,包含
+7,设计规约,1303,【强制】复杂需求（多角色/多用例）用用例图,包含
+7,设计规约,1304,【强制】对象状态超 3 个用状态图,包含
+7,设计规约,1305,【强制】调用链对象超 3 个用时序图,包含
+7,设计规约,1306,【强制】模型类超 5 个用类图,包含
+7,设计规约,1307,【强制】协作对象超 2 个用活动图,包含
+7,设计规约,1308,【强制】识别弱依赖设计降级与应急预案,包含
+7,设计规约,1309,【推荐】架构设计明确边界/模块关系/演化原则/非功能需求,包含
+7,设计规约,1310,【推荐】需求分析评估异常流程与业务边界,包含
+7,设计规约,1311,【推荐】类设计符合单一职责原则,包含
+7,设计规约,1312,【推荐】优先聚合/组合，慎用继承,包含
+7,设计规约,1313,【推荐】依赖倒置，依赖抽象与接口,包含
+7,设计规约,1314,【推荐】对扩展开放、对修改闭合,包含
+7,设计规约,1315,【推荐】共性抽取公共模块，遵循 DRY,包含
+7,设计规约,1316,【推荐】正确理解敏捷开发,包含
+7,设计规约,1317,【参考】设计文档明确需求/理顺逻辑/指导维护,包含
+7,设计规约,1318,【参考】可扩展性的本质是隔离变化点,包含
+7,设计规约,1319,【参考】设计的本质是识别并表达难点,包含
+7,设计规约,1320,【参考】代码即文档的观点是错误的,包含
+7,设计规约,1321,【参考】无障碍设计要点（tab 聚焦/验证码/控件交互）,包含
+1001,【强制】命名不能以下划线或美元符号开头或结尾,4001,_name / __name / $Object / name_ / name$ / Object$,反例
+1002,【强制】命名禁用拼音与英文混用，也不得直接使用中文,2001,正确的英文拼写和语法可以让阅读者易于理解，避免歧义。注意，即使纯拼音命名方式也要避免采用。,说明
+1002,【强制】命名禁用拼音与英文混用，也不得直接使用中文,3001,ali / alibaba / taobao / kaikeba / aliyun / youku / hangzhou等国际通用的名称，可视同英文。,正例
+1002,【强制】命名禁用拼音与英文混用，也不得直接使用中文,4002,DaZhePromotion【打折】/ getPingfenByName()【评分】 / String fw【福娃】/ int 变量名 = 3,反例
+1003,【强制】代码与注释中避免歧视性或侮辱性词语,3002,blockList / allowList / secondary,正例
+1003,【强制】代码与注释中避免歧视性或侮辱性词语,4003,blackList / whiteList / slave / SB / WTF,反例
+1004,【强制】类名用 UpperCamelCase（DO/PO/DTO/BO/VO/UID 等除外）,3003,ForceCode / UserDO / HtmlDTO / XmlService / TcpUdpDeal / TaPromotion,正例
+1004,【强制】类名用 UpperCamelCase（DO/PO/DTO/BO/VO/UID 等除外）,4004,forcecode / UserDo / HTMLDto / XMLService / TCPUDPDeal / TAPromotion,反例
+1005,【强制】方法名、参数、成员变量、局部变量统一 lowerCamelCase,3004,localValue / getHttpMessage() / inputUserId,正例
+1006,【强制】常量全大写下划线分隔，语义完整,3005,MAX_STOCK_COUNT / CACHE_EXPIRED_TIME,正例
+1006,【强制】常量全大写下划线分隔，语义完整,4005,MAX_COUNT / EXPIRED_TIME,反例
+1008,【强制】类型与中括号紧挨定义数组（int[] 而非 int []）,3006,定义整形数组int[] arrayDemo。,正例
+1008,【强制】类型与中括号紧挨定义数组（int[] 而非 int []）,4006,在main参数中，使用String args[] 来定义。,反例
+1009,【强制】POJO 布尔变量不加 is 前缀,2002,"本文MySQL规约中的建表约定第1条，表达是与否的变量采用is_xxx的命名方式，所以需要在<resultMap>
+设置从is_xxx到xxx的映射关系。",说明
+1009,【强制】POJO 布尔变量不加 is 前缀,4007,"定义为布尔类型Boolean isDeleted的字段，它的getter方法也是isDeleted()，部分框架在反向解析时，“误以
+为”对应的字段名称是deleted，导致字段获取不到，得到意料之外的结果或抛出异常。",反例
+1010,【强制】包名小写、点间单词单数且语义单一,3007,应用工具类包名为com.alibaba.ei.kunlun.aap.util；类名为MessageUtils（此规则参考spring的框架结构）。,正例
+1011,【强制】避免父子类成员或不同代码块局部变量同名,2003,"子类、父类成员变量名相同，即使是public也是能够通过编译，而局部变量在同一方法内的不同代码块中同名
+也是合法的，但是要避免使用。对于非setter / getter的参数名称也要避免与成员变量名称相同。",说明
+1011,【强制】避免父子类成员或不同代码块局部变量同名,4008,"public class ConfusingName {
+protected int stock;
+protected String alibaba;
+// 非setter/getter的参数名称，不允许与本类成员变量同名
+public void access(String alibaba) {
+if (condition) {
+final int money = 666;
+// ...
+}
+for (int i = 0; i < 10; i++) {
+// 在同一方法体中，不允许与其它代码块中的money命名相同
+final int money = 15978;
+// ...
+}
+}
+}
+class Son extends ConfusingName {
+// 不允许与父类的成员变量名称相同
+private int stock;
+}",反例
+1012,【强制】杜绝不规范的英文缩写,4009,"AbstractClass“缩写”成AbsClass；condition“缩写”成condi；Function“缩写”成Fu，此类随意缩写
+严重降低了代码的可阅读性。",反例
+1013,【推荐】命名使用完整单词组合实现自解释,3008,在JDK中，对某个对象引用的volatile字段进行原子更新的类名为AtomicReferenceFieldUpdater。,正例
+1013,【推荐】命名使用完整单词组合实现自解释,4010,常见的方法内变量为int a; 的定义方式。,反例
+1014,【推荐】表示类型的名词放词尾以提升辨识度,3009,startTime / workQueue / nameList / TERMINATED_THREAD_COUNT,正例
+1014,【推荐】表示类型的名词放词尾以提升辨识度,4011,startedAt / QueueOfWork / listName / COUNT_TERMINATED_THREAD,反例
+1015,【推荐】使用设计模式时在命名中体现模式,2004,将设计模式体现在名字中，有利于阅读者快速理解架构设计思想。,说明
+1015,【推荐】使用设计模式时在命名中体现模式,3010,"public class OrderFactory;
+public class LoginProxy;
+public class ResourceObserver;",正例
+1016,【推荐】接口方法与属性不加修饰符，尽量不定义常量,2005,JDK8中接口允许有默认实现，那么这个default方法，是对所有实现类都有价值的默认实现。,说明
+1016,【推荐】接口方法与属性不加修饰符，尽量不定义常量,3011,"接口方法签名void commit();
+接口基础常量String COMPANY = ""alibaba"";",正例
+1016,【推荐】接口方法与属性不加修饰符，尽量不定义常量,4012,接口方法定义public abstract void commit();,反例
+1017,【强制】Service/DAO 暴露接口，实现类用 Impl 后缀,3012,"CacheServiceImpl实现CacheService接口。
+2）【推荐】如果是形容能力的接口名称，取对应的形容词为接口名（通常是 –able结尾的形容词）。
+AbstractTranslator实现Translatable。",正例
+1018,【参考】枚举类带 Enum 后缀，成员全大写下划线,2006,枚举其实就是特殊的常量类，且构造方法被默认强制是私有。,说明
+1018,【参考】枚举类带 Enum 后缀，成员全大写下划线,3013,枚举名字为ProcessStatusEnum的成员名称：SUCCESS / UNKNOWN_REASON,正例
+1020,【强制】禁止魔法值直接出现在代码中,4013,"// 开发者A定义了缓存的key。
+String key = ""Id#taobao_"" + tradeId;
+cache.put(key, value);
+// 开发者B使用缓存时直接复制少了下划线，即key是""Id#taobao"" + tradeId，导致出现故障。
+String key = ""Id#taobao"" + tradeId;
+cache.get(key);",反例
+1021,【强制】long 字面量后缀用大写 L,2007,public static final Long NUM = 2l; 写的是数字的21，还是Long型的2？,说明
+1022,【强制】浮点数字面量后缀统一大写 D/F,3014,"public static final double HEIGHT = 175.5D;
+public static final float WEIGHT = 150.3F;",正例
+1023,【推荐】常量按功能归类，不搞大而全常量类,2008,大而全的常量类，杂乱无章，使用查找功能才能定位到要修改的常量，不利于理解，也不利于维护。,说明
+1023,【推荐】常量按功能归类，不搞大而全常量类,3015,缓存相关常量放在类CacheConsts下；系统配置相关常量放在类SystemConfigConsts下。,正例
+1024,【推荐】常量分五层复用：跨应用/应用内/子工程/包内/类内,4014,"易懂常量也要统一定义成应用内共享常量，两个程序员在两个类中分别定义了表示“是”的常量：
+类A中：public static final String YES = ""yes"";
+类B中：public static final String YES = ""y"";
+A.YES.equals(B.YES)，预期是true，但实际返回为false，导致线上问题。
+3）子工程内部共享常量：即在当前子工程的constant目录下。
+4）包内共享常量：即在当前包下单独的constant目录下。
+5）类内共享常量：直接在类内部private static final定义。",反例
+1025,【推荐】固定范围取值用 enum 定义,2009,如果存在名称之外的延伸属性应使用enum类型，下面正例中的数字就是延伸信息，表示一年中的第几个季节。,说明
+1025,【推荐】固定范围取值用 enum 定义,3016,"public enum SeasonEnum {
+SPRING(1), SUMMER(2), AUTUMN(3), WINTER(4);
+private int seq;
+SeasonEnum(int seq) {
+this.seq = seq;
+}
+public int getSeq() {
+return seq;
+}
+}",正例
+1027,【强制】小括号与相邻字符不加空格，大括号前加空格,4015,if(空格 a == b空格),反例
+1029,【强制】双目/三目运算符两侧加空格,2010,包括赋值运算符 =、逻辑运算符 &&、加减乘除符号等。,说明
+1030,【强制】4 空格缩进，禁用 Tab,2011,"如使用Tab缩进，必须设置1个Tab为4个空格。IDEA设置Tab为4个空格时，请勿勾选Use tab character；
+而在Eclipse中，找到tab policy设置为Spaces only，Tab size：4，最后必须勾选insert spaces for tabs",说明
+1030,【强制】4 空格缩进，禁用 Tab,3017,"（涉及上述中的1-5点）
+public static void main(String[] args) {
+// 缩进4个空格
+String say = ""hello"";
+// 运算符的左右必须有一个空格
+int flag = 0;
+// 关键词if与括号之间必须有一个空格，括号内的f与左括号，0与右括号不需要空格
+if (flag == 0) {
+System.out.println(say);
+}
+// 左大括号前加空格且不换行；左大括号后换行
+if (flag == 1) {
+System.out.println(""world"");
+// 右大括号前换行，右大括号后有else，不用换行
+} else {
+System.out.println(""ok"");
+// 在右大括号后直接结束，则必须换行
+}
+}",正例
+1031,【强制】注释 // 与内容间有且仅有一个空格,3018,"// 这是示例注释，请注意在双斜线之后有一个空格
+String commentString = new String(""demo"");",正例
+1032,【强制】强转右括号与转换值间不加空格,3019,"double first = 3.2D;
+int second = (int)first + 2;",正例
+1033,【强制】单行不超过 120 字符，按规范换行,3020,"StringBuilder builder = new StringBuilder();
+// 超过120个字符的情况下，换行缩进4个空格，并且方法前的点号一起换行
+builder.append(""yang"").append(""hao"")...
+.append(""chen"")...
+.append(""chen"")...
+.append(""chen"");",正例
+1033,【强制】单行不超过 120 字符，按规范换行,4016,"StringBuilder builder = new StringBuilder();
+// 超过120个字符的情况下，不要在括号前换行
+builder.append(""you"").append(""are"")...append
+(""lucky"");
+// 参数很多的方法调用可能超过120个字符，逗号后才是换行处
+method(args1, args2, args3, ...
+, argsX);",反例
+1034,【强制】方法参数逗号后加空格,3021,"下例中实参的args1逗号后边必须要有一个空格。
+method(args1, args2, args3);",正例
+1036,【推荐】单个方法总行数不超过 80 行,2012,除注释之外的方法签名、左右大括号、方法内代码、空行、回车及任何不可见字符的总行数不超过80行。,说明
+1036,【推荐】单个方法总行数不超过 80 行,3022,"代码逻辑分清红花和绿叶，个性和共性，绿叶逻辑单独出来成为额外方法，使主干代码更加晰；共性逻辑抽取
+成为共性方法，便于复用和维护。",正例
+1037,【推荐】无需为对齐等号额外加空格,2013,"增加builder这个变量，如果需要对齐，则给one、two、three都要增加几个空格，在变量比较多的情况下，是
+非常累赘的事情。",说明
+1037,【推荐】无需为对齐等号额外加空格,3023,"int one = 1;
+long two = 2L;
+float three = 3F;
+StringBuilder builder = new StringBuilder();",正例
+1038,【推荐】不同逻辑/语义/业务代码间插入一个空行,2014,任何情形，没有必要插入多个空行进行隔开。,说明
+1040,【强制】覆写方法必须加 @Override,2015,"getObject() 与get0bject() 的问题。一个是字母的O，一个是数字的0，加 @Override可以准确判断是否覆盖
+成功。另外，如果在抽象类中对方法签名进行修改，其实现类会马上编译报错。",说明
+1041,【强制】可变参数限定相同类型/业务含义，避免定义为 Object,2016,可变参数必须放置在参数列表的最后。（建议开发者尽量不用可变参数编程）,说明
+1041,【强制】可变参数限定相同类型/业务含义，避免定义为 Object,3024,"public List<User> listUsers(String type, Long... ids) {...}",正例
+1043,【强制】禁止使用过时的类或方法,2017,"java.net.URLDecoder中的方法decode(String encodeStr) 这个方法已经过时，应该使用双参数
+decode(String source, String encode)。接口提供方既然明确是过时接口，那么有义务同时提供新的接口；作为调用
+方来说，有义务去考证过时方法的新实现是什么。",说明
+1044,【强制】equals 用常量或有值对象调用，防 NPE,2018,"推荐使用JDK7引入的工具类java.util.Objects#equals(Object a, Object b)",说明
+1044,【强制】equals 用常量或有值对象调用，防 NPE,3025,"""test"".equals(param);",正例
+1044,【强制】equals 用常量或有值对象调用，防 NPE,4017,"param.equals(""test"");",反例
+1045,【强制】整型包装类对象值比较用 equals,2019,"对于Integer var = ? 在 -128至127之间的赋值，Integer对象是在IntegerCache.cache产生，会复用已有对
+象，这个区间内的Integer值可以直接使用 == 进行判断，但是这个区间之外的所有数据，都会在堆上产生，并不会复
+用已有对象，这是一个大坑，推荐使用equals方法进行判断。",说明
+1047,【强制】浮点等值判断用误差范围或 BigDecimal 比较,2020,"浮点数采用“尾数+阶码”的编码方式，类似于科学计数法的“有效数字+指数”的表示方式。二进制无法精确表
+示大部分的十进制小数，具体原理参考《码出高效》。",说明
+1047,【强制】浮点等值判断用误差范围或 BigDecimal 比较,3026,"(1)指定一个误差范围，两个浮点数的差值在此范围之内，则认为是相等的。
+float a = 1.0F - 0.9F;
+float b = 0.9F - 0.8F;
+float diff = 1e-6F;
+if (Math.abs(a - b) < diff) {
+System.out.println(""true"");
+}
+(2)使用BigDecimal来定义值，再进行浮点数的运算操作。
+BigDecimal a = new BigDecimal(""1.0"");
+BigDecimal b = new BigDecimal(""0.9"");
+BigDecimal c = new BigDecimal(""0.8"");
+BigDecimal x = a.subtract(b);
+BigDecimal y = b.subtract(c);
+if (x.compareTo(y) == 0) {
+System.out.println(""true"");
+}",正例
+1047,【强制】浮点等值判断用误差范围或 BigDecimal 比较,4018,"float a = 1.0F - 0.9F;
+float b = 0.9F - 0.8F;
+if (a == b) {
+// 预期进入此代码块，执行其它业务逻辑
+// 但事实上a == b的结果为false
+}
+Float x = Float.valueOf(a);
+Float y = Float.valueOf(b);
+if (x.equals(y)) {
+// 预期进入此代码块，执行其它业务逻辑
+// 但事实上equals的结果为false
+}",反例
+1048,【强制】BigDecimal 等值比较用 compareTo 而非 equals,2021,equals() 方法会比较值和精度（1.0 与 1.00 返回结果为 false），而compareTo() 则会忽略精度。,说明
+1049,【强制】DO 类属性类型与数据库字段类型匹配,3027,数据库字段的bigint必须与类属性的Long类型相对应。,正例
+1049,【强制】DO 类属性类型与数据库字段类型匹配,4019,"某业务的数据库表id字段定义类型为bigint unsigned，实际类对象属性为Integer，随着id越来越大，
+超过Integer的表示范围而溢出成为负数，此时数据库id不支持存入负数抛出异常产生线上故障。",反例
+1050,【强制】禁止用 BigDecimal(double) 构造,2022,"BigDecimal(double) 存在精度损失风险，在精确计算或值比较的场景中可能会导致业务逻辑异常。 如：
+BigDecimal g = new BigDecimal(0.1F)；实际的存储值为：0.100000001490116119384765625",说明
+1050,【强制】禁止用 BigDecimal(double) 构造,3028,"优先推荐入参为String的构造方法，或使用BigDecimal的valueOf方法，此方法内部其实执行了Double的
+toString，而Double的toString按double的实际能表达的精度对尾数进行了截断。
+BigDecimal recommend1 = new BigDecimal(""0.1"");
+BigDecimal recommend2 = BigDecimal.valueOf(0.1);",正例
+1051,【强制】POJO/RPC 用包装类型，局部变量用基本类型,2023,"POJO类属性没有初值是提醒使用者在需要使用时，必须自己显式地进行赋值，任何NPE问题，或者入库检查，
+都由使用者来保证。",说明
+1051,【强制】POJO/RPC 用包装类型，局部变量用基本类型,3029,数据库的查询结果可能是null，因为自动拆箱，用基本数据类型接收有NPE风险。,正例
+1051,【强制】POJO/RPC 用包装类型，局部变量用基本类型,4020,"某业务的交易报表上显示成交总额涨跌情况，即正负x%，x为基本数据类型，调用的RPC服务，调用不成功时，
+返回的是默认值，页面显示为0%，这是不合理的，应该显示成中划线-。所以包装数据类型的null值，能够表示额外的
+信息，如：远程调用失败，异常退出。",反例
+1052,【强制】POJO 类不设属性默认值,4021,"某业务的DO的createTime默认值为new Date()；但是这个属性在数据提取时并没有置入具体值，在更新其
+它字段时又附带更新了此字段，导致创建时间被修改成当前时间。",反例
+1053,【强制】序列化类新增属性不改 serialVersionUID,2024,注意serialVersionUID不一致会抛出序列化运行时异常。,说明
+1055,【强制】POJO 必须写 toString，继承时加 super.toString(),2025,在方法执行抛出异常时，可以直接调用POJO的toString() 方法打印其属性值，便于排查问题。,说明
+1056,【强制】禁止同属性 isXxx() 与 getXxx() 并存,2026,框架在调用属性xxx的提取方法时，并不能确定哪个方法一定是被优先调用到，神坑之一。,说明
+1057,【推荐】split 后按索引访问需检查末尾空内容,2027,"String str = ""a,b,c,,"";
+String[] ary = str.split("","");
+// 预期大于3，结果等于3
+System.out.println(ary.length);",说明
+1058,【推荐】多个构造方法/同名方法按序放置,3030,"public int method(int param);
+protected double method(int param1, int param2);
+private void method();",正例
+1059,【推荐】方法顺序：公有/保护 > 私有 > getter/setter,2028,"公有方法是类的调用者和维护者最关心的方法，首屏展示最好；保护方法虽然只是子类关心，也可能是“模板设
+计模式”下的核心方法；而私有方法外部一般不需要特别关心，是一个黑盒实现；因为承载的信息价值较低，所有
+Service和DAO的getter / setter方法放在类体最后。",说明
+1060,【推荐】setter 用 this 赋值，getter/setter 不加业务逻辑,4022,"public Integer getData() {
+if (condition) {
+return this.data + 100;
+} else {
+return this.data - 100;
+}
+}",反例
+1061,【推荐】循环内字符串拼接用 StringBuilder,2029,"反编译出的字节码文件显示每次循环都会new出一个StringBuilder对象，然后进行append操作，最后通过
+toString() 返回String对象，造成内存资源浪费。",说明
+1061,【推荐】循环内字符串拼接用 StringBuilder,4023,"String str = ""start"";
+for (int i = 0; i < 100; i++) {
+str = str + ""hello"";
+}",反例
+1063,【推荐】慎用 clone（默认浅拷贝）,2030,对象clone方法默认是浅拷贝，若想实现深拷贝需覆写clone方法实现域对象的深度遍历式拷贝。,说明
+1064,【推荐】类成员与方法访问控制从严,2031,"任何类、方法、参数、变量，严控访问范围。过于宽泛的访问范围，不利于模块解耦。思考：如果是一个
+private的方法，想删除就删除，可是一个public的service成员方法或成员变量，删除一下，不得手心冒点汗吗？
+变量像自己的小孩，尽量在自己的视线内，变量作用域太大，无限制的到处跑，那么你会担心的。",说明
+1065,【强制】日期格式化年份用小写 y（非大写 YYYY）,2032,"日期格式化时，yyyy表示当天所在的年，而大写的YYYY代表是week in which year（JDK7之后引入的概念），
+意思是当天所在的周属于的年份，一周从周日开始，周六结束，只要本周跨年，返回的YYYY就是下一年。",说明
+1065,【强制】日期格式化年份用小写 y（非大写 YYYY）,3031,"表示日期和时间的格式如下所示：
+new SimpleDateFormat(""yyyy-MM-dd HH:mm:ss"")",正例
+1065,【强制】日期格式化年份用小写 y（非大写 YYYY）,4024,某程序员因使用YYYY/MM/dd进行日期格式化，2017/12/31执行结果为2018/12/31，造成线上故障。,反例
+1066,【强制】分清 M 月/m 分、H 24 小时/h 12 小时,2033,"日期格式中的这两对字母表意如下：
+1）表示月份是大写的M
+2）表示分钟则是小写的m
+3）24小时制的是大写的H
+4）12小时制的则是小写的h",说明
+1067,【强制】当前毫秒用 System.currentTimeMillis(),2034,获取纳秒级时间，则使用System.nanoTime的方式。在JDK8中，针对统计时间等场景，推荐使用Instant类。,说明
+1068,【强制】禁用 java.sql.Date/Time/Timestamp,2035,"第1个不记录时间，getHours() 抛出异常；第2个不记录日期，getYear() 抛出异常；第3个在构造方法
+super((time / 1000) * 1000)，在Timestamp属性fastTime和nanos分别存储秒和纳秒信息。",说明
+1068,【强制】禁用 java.sql.Date/Time/Timestamp,4025,"java.util.Date.after(Date) 进行时间比较时，当入参是java.sql.Timestamp时，会触发JDK BUG（JDK9已修
+复），可能导致比较时的意外结果。",反例
+1069,【强制】不写死一年 365 天，需处理闰年,3032,"// 获取今年的天数
+int daysOfThisYear = LocalDate.now().lengthOfYear();
+// 获取指定某年的天数
+LocalDate.of(2011, 1, 1).lengthOfYear();",正例
+1069,【强制】不写死一年 365 天，需处理闰年,4026,"// 第一种情况：在闰年366天时，出现数组越界异常
+int[] dayArray = new int[365];
+// 第二种情况：一年有效期的会员制，2020年1月26日注册，硬编码365返回的却是2021年1月25日
+Calendar calendar = Calendar.getInstance();
+calendar.set(2020, 1, 26);
+calendar.add(Calendar.DATE, 365);",反例
+1071,【推荐】月份用枚举，注意 month 从 0 起,2036,"参考JDK原生注释，Month value is 0-based. e.g., 0 for January.",说明
+1071,【推荐】月份用枚举，注意 month 从 0 起,3033,Calendar.JANUARY，Calendar.FEBRUARY，Calendar.MARCH等来指代相应月份来进行传参或比较。,正例
+1072,【强制】覆写 equals 必须覆写 hashCode（Set/Map 键）,2037,String因为覆写了hashCode和equals方法，所以可以愉快地将String对象作为key来使用。,说明
+1073,【强制】集合判空用 isEmpty() 而非 size()==0,2038,在某些集合中，前者的时间复杂度为O(1)，而且可读性更好。,说明
+1073,【强制】集合判空用 isEmpty() 而非 size()==0,3034,"Map<String, Object> map = new HashMap<>(16);
+if (map.isEmpty()) {
+System.out.println(""no element in this map."");
+}",正例
+1074,【强制】toMap() 需传 mergeFunction 防同 key 异常,2039,参数mergeFunction的作用是当出现key重复时，自定义对value的处理策略。,说明
+1074,【强制】toMap() 需传 mergeFunction 防同 key 异常,3035,"List<Pair<String, Double>> pairArrayList = new ArrayList<>(3);
+pairArrayList.add(new Pair<>(""version"", 12.10));
+pairArrayList.add(new Pair<>(""version"", 12.19));
+pairArrayList.add(new Pair<>(""version"", 6.28));
+// 生成的map集合中只有一个键值对：{version=6.28}
+Map<String, Double> map = pairArrayList.stream()
+.collect(Collectors.toMap(Pair::getKey, Pair::getValue, (v1, v2) -> v2));",正例
+1074,【强制】toMap() 需传 mergeFunction 防同 key 异常,4027,"String[] departments = new String[]{""RDC"", ""RDC"", ""KKB""};
+// 抛出IllegalStateException异常
+Map<Integer, String> map = Arrays.stream(departments)
+.collect(Collectors.toMap(String::hashCode, str -> str));",反例
+1075,【强制】toMap() 注意 value 为 null 抛 NPE,2040,"在java.util.HashMap的merge方法里会进行如下的判断：
+if (value == null || remappingFunction == null)
+throw new NullPointerException();",说明
+1075,【强制】toMap() 注意 value 为 null 抛 NPE,4028,"List<Pair<String, Double>> pairArrayList = new ArrayList<>(2);
+pairArrayList.add(new Pair<>(""version1"", 8.3));
+pairArrayList.add(new Pair<>(""version2"", null));
+// 抛出NullPointerException异常
+Map<String, Double> map = pairArrayList.stream()
+.collect(Collectors.toMap(Pair::getKey, Pair::getValue, (v1, v2) -> v2));",反例
+1076,【强制】subList 结果不可强转 ArrayList,2041,"subList() 返回的是ArrayList的内部类SubList，并不是ArrayList本身，而是ArrayList的一个视图，对于
+SubList的所有操作最终会反映到原列表上。",说明
+1078,【强制】emptyList/singletonList 等不可变集合不可增删,4029,"如果查询无结果，返回Collections.emptyList() 空集合对象，调用方一旦在返回的集合中进行了添加元素的操
+作，就会触发UnsupportedOperationException异常。",反例
+1079,【强制】subList 场景注意父集合增删引发并发修改异常,2042,抽查表明，90% 的程序员对此知识点都有错误的认知。,说明
+1080,【强制】集合转数组用 toArray(new T[0]),2043,"使用toArray带参方法，数组空间大小的length：
+1）等于0，动态创建与size相同的数组，性能最好。
+2）大于0但小于size，重新创建大小等于size的数组，增加GC负担。
+3）等于size，在高并发情况下，数组创建完成之后，size正在变大的情况下，负面影响与2相同。
+4）大于size，空间浪费，且在size处插入null值，存在NPE隐患。",说明
+1080,【强制】集合转数组用 toArray(new T[0]),3036,"List<String> list = new ArrayList<>(2);
+list.add(""guan"");
+list.add(""bao"");
+String[] array = list.toArray(new String[0]);",正例
+1080,【强制】集合转数组用 toArray(new T[0]),4030,"直接使用toArray无参方法存在问题，此方法返回值只能是Object[]类，若强转其它类型数组将出现
+ClassCastException错误。",反例
+1081,【强制】addAll() 对输入集合做 NPE 判断,2044,"在ArrayList#addAll方法的第一行代码即Object[] a = c.toArray()；其中c为输入集合参数，如果为null，
+则直接抛出异常。",说明
+1082,【强制】Arrays.asList() 转换的集合不可增删,2045,"asList的返回对象是一个Arrays内部类，并没有实现集合的修改方法。Arrays.asList体现的是适配器模式，只
+是转换接口，后台的数据仍是数组。
+String[] str = new String[]{ ""yang"", ""guan"", ""bao"" };
+List list = Arrays.asList(str);
+第一种情况：list.add(""yangguanbao""); 运行时异常。
+第二种情况：str[0] = ""change""; list中的元素也会随之修改，反之亦然。",说明
+1083,【强制】<? extends T> 不能 add，<? super T> 不能 get,2046,"扩展说一下PECS(Producer Extends Consumer Super) 原则，即频繁往外读取内容的，适合用
+<? extends T>，经常往里插入的，适合用<? super T>",说明
+1084,【强制】泛型混用时元素需 instanceof 判断,2047,毕竟泛型是在JDK5后才出现，考虑到向前兼容，编译器是允许非泛型集合与泛型集合互相赋值。,说明
+1084,【强制】泛型混用时元素需 instanceof 判断,4031,"List<String> generics = null;
+List notGenerics = new ArrayList(10);
+notGenerics.add(new Object());
+notGenerics.add(new Integer(1));
+generics = notGenerics;
+// 此处抛出ClassCastException异常
+String string = generics.get(0);",反例
+1085,【强制】foreach 中不增删元素，用 iterator（并发需加锁）,2048,反例中的执行结果肯定会出乎大家的意料，那么试一下把“1”换成“2”会是同样的结果吗？,说明
+1085,【强制】foreach 中不增删元素，用 iterator（并发需加锁）,3037,"List<String> list = new ArrayList<>();
+list.add(""1"");
+list.add(""2"");
+Iterator<String> iterator = list.iterator();
+while (iterator.hasNext()) {
+String item = iterator.next();
+if (删除元素的条件) {
+iterator.remove();
+}
+}",正例
+1085,【强制】foreach 中不增删元素，用 iterator（并发需加锁）,4032,"for (String item : list) {
+if (""1"".equals(item)) {
+list.remove(item);
+}
+}",反例
+1086,【强制】Comparator 需满足自反/传递/对称三条件,2049,"三个条件如下
+1）x，y的比较结果和y，x的比较结果相反。
+2）x > y，y > z，则x > z。
+3）x = y，则x，z比较结果和y，z比较结果相同。",说明
+1086,【强制】Comparator 需满足自反/传递/对称三条件,4033,"下例中没有处理相等的情况，交换两个对象判断结果并不互反，不符合第一个条件，在实际使用中可能会出现异
+常。
+new Comparator<Student>() {
+@Override
+public int compare(Student o1, Student o2) {
+return o1.getId() > o2.getId() ? 1 : -1;
+}
+};",反例
+1087,【推荐】泛型集合用 diamond 语法或全省略,2050,菱形泛型，即diamond，直接使用<>来指代前边已经指定的类型。,说明
+1087,【推荐】泛型集合用 diamond 语法或全省略,3038,"// diamond方式，即<>
+HashMap<String, String> userCache = new HashMap<>(16);
+// 全省略方式
+ArrayList<User> users = new ArrayList(10);",正例
+1088,【推荐】集合初始化指定初始容量,2051,"HashMap使用构造方法HashMap(int initialCapacity) 进行初始化时，如果暂时无法确定集合大小，那么指
+定默认值（16）即可。",说明
+1088,【推荐】集合初始化指定初始容量,3039,"initialCapacity = (需要存储的元素个数 / 负载因子) + 1。注意负载因子（即loaderfactor）默认为0.75，如果
+暂时无法确定初始值大小，请设置为16（即默认值）。",正例
+1088,【推荐】集合初始化指定初始容量,4034,"HashMap需要放置1024个元素，由于没有设置容量初始大小，随着元素增加而被迫不断扩容，resize() 方法
+总共会调用8次，反复重建哈希表和数据迁移。当放置的集合元素个数达千万级时会影响程序性能。",反例
+1089,【推荐】遍历 Map 用 entrySet 而非 keySet,2052,"keySet其实是遍历了2次，一次是转为Iterator对象，另一次是从hashMap中取出key所对应的value。而
+entrySet只是遍历了一次就把key和value都放到了entry中，效率更高。如果是JDK8，使用Map.forEach方法。",说明
+1089,【推荐】遍历 Map 用 entrySet 而非 keySet,3040,"values() 返回的是V值集合，是一个list集合对象；keySet() 返回的是K值集合，是一个Set集合对象；
+entrySet() 返回的是K-V值组合的Set集合。",正例
+1090,【推荐】注意各 Map 对 null 键值的支持差异,4035,"由于HashMap的干扰，很多人认为ConcurrentHashMap是可以置入null值，而事实上，存储null值时会抛
+出NPE异常。",反例
+1091,【参考】合理利用集合的有序性与稳定性,2053,"有序性是指遍历的结果是按某种比较规则依次排列的，稳定性指集合每次遍历的元素次序是一定的。如：
+ArrayList是order / unsort；HashMap是unorder / unsort；TreeSet是order / sort。",说明
+1093,【强制】单例对象及其方法须线程安全,2054,资源驱动类、工具类、单例工厂类都需要注意。,说明
+1094,【强制】线程/线程池指定有意义的名称,3041,"自定义线程工厂，并且根据外部特征进行分组，比如，来自同一机房的调用，把机房编号赋值给
+whatFeatureOfGroup：
+public class UserThreadFactory implements ThreadFactory {
+private final String namePrefix;
+private final AtomicInteger nextId = new AtomicInteger(1);
+// 定义线程组名称，在利用jstack来排查问题时，非常有帮助
+UserThreadFactory(String whatFeatureOfGroup) {
+namePrefix = ""FromUserThreadFactory's"" + whatFeatureOfGroup + ""-Worker-"";
+}
+@Override
+public Thread newThread(Runnable task) {
+String name = namePrefix + nextId.getAndIncrement();
+Thread thread = new Thread(null, task, name, 0, false);
+System.out.println(thread.getName());
+return thread;
+}
+}",正例
+1095,【强制】线程须经线程池创建，不显式 new 线程,2055,"线程池的好处是减少在创建和销毁线程上所消耗的时间以及系统资源的开销，解决资源不足的问题。如果不使用
+线程池，有可能造成系统创建大量同类线程而导致消耗完内存或者“过度切换”的问题。",说明
+1096,【强制】用 ThreadPoolExecutor 而非 Executors,2056,"Executors返回的线程池对象的弊端如下：
+1）FixedThreadPool和SingleThreadPool：
+允许的请求队列长度为Integer.MAX_VALUE，可能会堆积大量的请求，从而导致OOM。
+2）CachedThreadPool：
+允许的创建线程数量为Integer.MAX_VALUE，可能会创建大量的线程，从而导致OOM。
+3）ScheduledThreadPool：
+允许的请求队列长度为Integer.MAX_VALUE，可能会堆积大量的请求，从而导致OOM。",说明
+1097,【强制】SimpleDateFormat 勿 static，需加锁或用 DateUtils,2057,"如果是JDK8的应用，可以使用Instant代替Date，LocalDateTime代替Calendar，DateTimeFormatter代替
+SimpleDateFormat，官方给出的解释：simple beautiful strong immutable thread-safe。",说明
+1097,【强制】SimpleDateFormat 勿 static，需加锁或用 DateUtils,3042,"注意线程安全，使用DateUtils。亦推荐如下处理：
+private static final ThreadLocal<DateFormat> dateStyle = new ThreadLocal<DateFormat>() {
+@Override
+protected DateFormat initialValue() {
+return new SimpleDateFormat(""yyyy-MM-dd"");
+}
+};",正例
+1098,【强制】自定义 ThreadLocal 用 try-finally 回收,3043,"objectThreadLocal.set(userInfo);
+try {
+// ...
+} finally {
+objectThreadLocal.remove();
+}",正例
+1099,【强制】高并发尽量无锁/锁区块，减小锁开销,2058,尽可能使加锁的代码块工作量尽可能的小，避免在锁代码块中调用RPC方法。,说明
+1100,【强制】多资源加锁保持顺序一致防死锁,2059,"线程一需要对表A、B、C依次全部加锁后才可以进行更新操作，那么线程二的加锁顺序也必须是A、B、C，否则可
+能出现死锁。",说明
+1101,【强制】阻塞加锁 lock() 放在 try 块外,2060,"在lock方法与try代码块之间的方法调用抛出异常，无法解锁，造成其它线程无法成功获取锁。
+如果lock方法在try代码块之内，可能由于其它方法抛出异常，导致在finally代码块中，unlock对未加锁的对
+象解锁，它会调用AQS的tryRelease方法（取决于具体实现类），抛出IllegalMonitorStateException异常。
+在Lock对象的lock方法实现中可能抛出unchecked异常，产生的后果与说明二相同。",说明
+1101,【强制】阻塞加锁 lock() 放在 try 块外,3044,"Lock lock = new XxxLock();
+// ...
+lock.lock();
+try {
+doSomething();
+doOthers();
+} finally {
+lock.unlock();
+}",正例
+1101,【强制】阻塞加锁 lock() 放在 try 块外,4036,"Lock lock = new XxxLock();
+// ...
+try {
+// 如果此处抛出异常，则直接执行finally代码块
+doSomething();
+// 无论加锁是否成功，finally代码块都会执行
+lock.lock();
+doOthers();
+} finally {
+lock.unlock();
+}",反例
+1102,【强制】tryLock 后先判断是否持锁再进业务,2061,"Lock对象的unlock方法在执行时，它会调用AQS的tryRelease方法（取决于具体实现类），如果当前线程不
+持有锁，则抛出IllegalMonitorStateException异常。",说明
+1102,【强制】tryLock 后先判断是否持锁再进业务,3045,"Lock lock = new XxxLock();
+// ...
+boolean isLocked = lock.tryLock();
+if (isLocked) {
+try {
+doSomething();
+doOthers();
+} finally {
+lock.unlock();
+}
+}",正例
+1103,【强制】并发更新同一记录用乐观锁(version),2062,如果每次访问冲突概率小于20%，推荐使用乐观锁，否则使用悲观锁。乐观锁的重试次数不得小于3次。,说明
+1105,【推荐】资金等金融敏感信息用悲观锁,2063,"乐观锁在获得锁的同时已经完成了更新操作，校验逻辑容易出现漏洞，另外，乐观锁对冲突的解决策略有较复杂
+的要求，处理不当容易造成系统压力或数据异常，所以资金相关的金融敏感信息不建议使用乐观锁更新。",说明
+1105,【推荐】资金等金融敏感信息用悲观锁,3046,悲观锁遵循一锁二判三更新四释放的原则。,正例
+1106,【推荐】CountDownLatch 须保证每个线程 countDown,2064,注意，子线程抛出异常堆栈，不能在主线程try-catch到。,说明
+1107,【推荐】Random 实例勿多线程共享,2065,Random实例包括java.util.Random的实例或者Math.random() 的方式。,说明
+1107,【推荐】Random 实例勿多线程共享,3047,"在JDK7之后，可以直接使用API ThreadLocalRandom，而在JDK7之前，需要编码保证每个线程持有一个
+单独的Random实例。",正例
+1108,【推荐】双重检查锁目标属性声明 volatile,3048,"public class LazyInitDemo {
+private volatile Helper helper = null;
+public Helper getHelper() {
+if (helper == null) {
+synchronized(this) {
+if (helper == null) {
+helper = new Helper();
+}
+}
+}
+return helper;
+}
+// other methods and fields...
+}",正例
+1109,【参考】volatile 仅适合一写多读，多写不保证,2066,"如果是count++操作，使用如下类实现：
+AtomicInteger count = new AtomicInteger();
+count.addAndGet(1);
+如果是JDK8，推荐使用LongAdder对象，比AtomicLong性能更好（减少乐观锁的重试次数）。",说明
+1111,【参考】ThreadLocal 用 static 修饰，不解决共享对象更新,2067,"这个变量是针对一个线程内所有操作共享的，所以设置为静态变量，所有此类实例共享此静态变量，也就是说在
+类第一次被使用时装载，只分配一块存储空间，所有此类的对象（只要是这个线程内定义的）都可以操控这个变量。",说明
+1112,【强制】switch 含 default 且放最后，case 需终止或注释,2068,注意break是退出switch语句块，而return是退出方法体。,说明
+1113,【强制】switch 的 String 外部参数先判 null,4037,"如下的代码输出是什么？
+public class SwitchString {
+public static void main(String[] args) {
+method(null);
+}
+public static void method(String param) {
+switch (param) {
+// 肯定不是进入这里
+case ""sth"":
+System.out.println(""it's sth"");
+break;
+// 也不是进入这里
+case ""null"":
+System.out.println(""it's null"");
+break;
+// 也不是进入这里
+default:
+System.out.println(""default"");
+}
+}
+}",反例
+1114,【强制】if/else/for/while/do 必须使用大括号,2069,即使只有一行代码，也要采用大括号的编码方式。,说明
+1114,【强制】if/else/for/while/do 必须使用大括号,4038,if (condition) statements;,反例
+1115,【强制】三目运算符注意类型对齐导致的拆箱 NPE,2070,"以下两种场景会触发类型对齐的拆箱操作：
+1）表达式1或 表达式2的值只要有一个是原始类型。
+2）表达式1或 表达式2的值的类型不一致，会强制拆箱升级成表示范围更大的那个类型。",说明
+1115,【强制】三目运算符注意类型对齐导致的拆箱 NPE,4039,"Integer a = 1;
+Integer b = 2;
+Integer c = null;
+Boolean flag = false;
+// a*b的结果是int类型，那么c会强制拆箱成int类型，抛出NPE异常
+Integer result = (flag ? a * b : c);",反例
+1116,【强制】高并发用区间判断替代等于判断作中断条件,2071,如果并发控制没有处理好，容易产生等值判断被“击穿”的情况，使用大于或小于的区间判断条件来代替。,说明
+1116,【强制】高并发用区间判断替代等于判断作中断条件,4040,"判断剩余奖品数量等于0时，终止发放奖品，但因为并发处理错误导致奖品数量瞬间变成了负数，这样的话，
+活动无法终止。",反例
+1117,【推荐】方法超 10 行时 return/throw 后加空行,2072,这样做逻辑清晰，有利于代码阅读时重点关注。,说明
+1118,【推荐】异常分支少用 if-else，用卫语句/策略/状态模式,2073,如果非使用if()...else if()...else...方式表达逻辑，避免后续代码维护困难，请勿超过3层。,说明
+1118,【推荐】异常分支少用 if-else，用卫语句/策略/状态模式,3049,"超过3层的if-else的逻辑判断代码可以使用卫语句、策略模式、状态模式等来实现，其中卫语句示例如下：
+public void findBoyfriend(Man man) {
+if (man.isUgly()) {
+System.out.println(""本姑娘是外貌协会的资深会员"");
+return;
+}
+if (man.isPoor()) {
+System.out.println(""贫贱夫妻百事哀"");
+return;
+}
+if (man.isBadTemper()) {
+System.out.println(""银河有多远，你就给我滚多远"");
+return;
+}
+System.out.println(""可以先交往一段时间看看"");
+}",正例
+1119,【推荐】复杂判断先赋布尔变量，不在条件中执行,2074,"很多if语句内的逻辑表达式相当复杂，与、或、取反混合运算，甚至各种方法纵深调用，理解成本非常高。如果赋
+值一个非常好理解的布尔变量名字，则是件令人爽心悦目的事情。",说明
+1119,【推荐】复杂判断先赋布尔变量，不在条件中执行,3050,"// 伪代码如下
+final boolean existed = (file.open(fileName, ""w"") != null) && (...) || (...);
+if (existed) {
+...
+}",正例
+1119,【推荐】复杂判断先赋布尔变量，不在条件中执行,4041,"public final void acquire(long arg) {
+if (!tryAcquire(arg) && acquireQueued(addWaiter(Node.EXCLUSIVE), arg)) {
+selfInterrupt();
+}
+}",反例
+1120,【推荐】不在其他表达式（尤其条件）中插入赋值,2075,赋值点类似于人体的穴位，对于代码的理解至关重要，所以赋值语句需要清晰地单独成为一行。,说明
+1120,【推荐】不在其他表达式（尤其条件）中插入赋值,4042,"public Lock getLock(boolean fair) {
+// 算术表达式中出现赋值操作，容易忽略count值已经被改变
+threshold = (count = Integer.MAX_VALUE) - 1;
+// 条件表达式中出现赋值操作，容易误认为是sync == fair
+return (sync = fair) ? new FairSync() : new NonfairSync();
+}",反例
+1122,【推荐】避免取反逻辑运算符,2076,取反逻辑不利于快速理解，并且取反逻辑写法一般都存在对应的正向逻辑写法。,说明
+1122,【推荐】避免取反逻辑运算符,3051,使用if(x < 628) 来表达x小于628。,正例
+1122,【推荐】避免取反逻辑运算符,4043,使用if(!(x >= 628)) 来表达x小于628。,反例
+1123,【推荐】公开接口（尤其批量操作）入参保护,4044,"某业务系统，提供一个用户批量查询的接口，API文档上有说最多查多少个，但接口实现上没做任何保护，导致
+调用方传了一个1000的用户id数组过来后，查询信息后，内存爆了。",反例
+1126,【强制】类/属性/方法注释用 Javadoc /** */ 格式,2077,"在IDE编辑窗口中，Javadoc方式会提示相关注释，生成Javadoc可以正确输出相应注释；在IDE中，工程调用
+方法时，不进入方法即可悬浮提示方法、参数、返回值的意义，提高阅读效率。",说明
+1127,【强制】抽象方法须用 Javadoc 说明功能,2078,对子类的实现要求，或者调用注意事项，请一并说明。,说明
+1128,【强制】所有类必须注明创建者和创建日期,2079,"在设置模板时，注意IDEA的@author为`${USER}`，而eclipse的@author为`${user}`，大小写有区别，而日期
+的设置统一为yyyy/MM/dd的格式。",说明
+1128,【强制】所有类必须注明创建者和创建日期,3052,"/**
+*
+* @author yangguanbao
+* @date 2021/11/26
+*
+**/",正例
+1131,【推荐】注释用中文说清，专有名词保留英文,4045,“TCP连接超时”解释成“传输控制协议连接超时”，理解反而费脑筋。,反例
+1132,【推荐】改代码同步更新注释,2080,代码与注释更新不同步，就像公路网与导航软件更新不同步一样，如果导航软件严重滞后，就失去了导航的意义。,说明
+1134,【参考】谨慎注释代码，无用则删除,2081,"代码被注释掉有两种可能性：1）后续会恢复此段代码逻辑。2）永久不用。前者如果没有备注信息，难以知晓注
+释动机。后者建议直接删掉即可，假如需要查阅历史代码，登录代码仓库即可。",说明
+1136,【参考】注释精简，好命名自解释,4046,"// put elephant into fridge
+put(elephant, fridge);
+方法名put，加上两个有意义的变量名称elephant和fridge，已经说明了这是在干什么，语义清晰的代码不需要额外
+的注释。",反例
+1138,【强制】API 明确协议/域名/路径/方法/内容/状态码/响应体,2082,"1）协议：生产环境必须使用HTTPS。
+2）路径：每一个API需对应一个路径，表示API具体的请求地址：
+a）代表一种资源，只能为名词，推荐使用复数，不能为动词，请求方法已经表达动作意义。
+b）URL路径不能使用大写，单词如果需要分隔，统一使用下划线。
+c）路径禁止携带表示请求内容类型的后缀，比如"".json""，"".xml""，通过accept头表达即可。
+3）请求方法：对具体操作的定义，常见的请求方法如下：
+a）GET：从服务器取出资源。
+b）POST：在服务器新建一个资源。
+c）PUT：在服务器更新资源。
+d）DELETE：从服务器删除资源。
+4）请求内容：URL带的参数必须无敏感信息或符合安全要求；body里带参数时必须设置Content-Type。
+5）响应体：响应体body可放置多种数据类型，由Content-Type头来确定。",说明
+1139,【强制】空列表接口返回空数组 [] 或空集合 {},2083,此条约定有利于数据层面上的协作更加高效，减少前端很多琐碎的null判断。,说明
+1140,【强制】错误响应含 HTTP 状态码/errorCode/errorMessage/用户提示,2084,"四个部分的涉众对象分别是浏览器、前端开发、错误排查人员、用户。其中输出给用户的提示信息要求：简短清
+晰、提示友好，引导用户进行下一步操作或解释错误原因，提示信息可以包括错误原因、上下文环境、推荐操作等。
+errorCode：参考 。errorMessage：简要描述后端出错原因，便于错误排查人员快速定位问题，注意不要包含敏
+感数据信息。",说明
+1140,【强制】错误响应含 HTTP 状态码/errorCode/errorMessage/用户提示,3053,"常见的HTTP状态码如下
+1）200 OK：表明该请求被成功地完成，所请求的资源发送到客户端。
+2）401 Unauthorized：请求要求身份验证，常见对于需要登录而用户未登录的情况。
+3）403 Forbidden：服务器拒绝请求，常见于机密信息或复制其它登录用户链接访问服务器的情况。
+4）404 NotFound：服务器无法取得所请求的网页，请求资源不存在。
+5）500 InternalServerError：服务器内部错误。",正例
+1141,【强制】JSON 的 key 用 lowerCamelCase,3054,errorCode / errorMessage / assetStatus / menuList / orderList / configFlag,正例
+1141,【强制】JSON 的 key 用 lowerCamelCase,4047,ERRORCODE / ERROR_CODE / error_message / error-message / errormessage,反例
+1143,【强制】超大整数用 String 返回，禁止 Long,2085,"Java服务端如果直接返回Long整型数据给前端，Javascript会自动转换为Number类型（注：此类型为双精度浮
+点数，表示原理与取值范围等同于Java中的Double）。Long类型能表示的最大值是263-1，在取值范围之内，超过253
+（9007199254740992）的数值转化为Javascript的Number时，有些数值会产生精度损失。扩展说明，在Long取值范
+围内，任何2的指数次的整数都是绝对不会存在精度损失的，所以说精度损失是一个概率问题。若浮点数尾数位与指数位
+空间不限，则可以精确表示任何整数，但很不幸，双精度浮点数的尾数位只有52位。",说明
+1143,【强制】超大整数用 String 返回，禁止 Long,4048,"通常在订单号或交易号大于等于16位，大概率会出现前后端订单数据不一致的情况。
+比如，后端传输的 ""orderId""：362909601374617692，前端拿到的值却是：362909601374617660",反例
+1144,【强制】URL 传参不超过 2048 字节,2086,"不同浏览器对于URL的最大长度限制略有不同，并且对超出最大长度的处理逻辑也有差异，2048字节是取所
+有浏览器的最小值。",说明
+1144,【强制】URL 传参不超过 2048 字节,4049,"某业务将退货的商品id列表放在URL中作为参数传递，当一次退货商品数量过多时，URL参数超长，传递到后端的
+参数被截断，导致部分商品未能正确退货。",反例
+1145,【强制】body 传参必须控制长度,2087,nginx默认限制是1MB，tomcat默认限制为2MB，当确实有业务需要传较大内容时，可以调大服务器端的限制。,说明
+1148,【推荐】返回信息标记是否可缓存,2088,缓存有利于减少交互次数，减少交互的平均延迟。,说明
+1148,【推荐】返回信息标记是否可缓存,3055,"http1.1中，s-maxage告诉服务器进行缓存，时间单位为秒，用法如下，
+response.setHeader(""Cache-Control"", ""s-maxage="" + cacheSeconds);",正例
+1149,【推荐】返回数据用 JSON 而非 XML,2089,"尽管HTTP支持使用不同的输出格式，例如纯文本，JSON，CSV，XML，RSS甚至HTML。如果我们使用的面
+向用户的服务，应该选择JSON作为通信中使用的标准数据交换格式，包括请求和响应。此外，application/JSON是
+一种通用的MIME类型，具有实用、精简、易读的特点。",说明
+1151,【参考】版本号放 HTTP 头而非路径,2090,当用户在低版本与高版本之间反复切换工作时，会导致迁移复杂度升高，存在数据错乱风险。,说明
+1152,【强制】正则表达式利用预编译提升匹配速度,2091,"不要在方法体内定义：Pattern pattern = Pattern.compile(""规则"");",说明
+1153,【强制】避免用 ApacheBeanUtils 做属性拷贝,2092,ApacheBeanUtils性能较差，可以使用其他方案比如SpringBeanUtils，CglibBeanCopier，注意均是浅拷贝。,说明
+1154,【强制】velocity 调用 POJO 直接用属性名取值,2093,注意如果是Boolean包装类对象，优先调用getXxx() 的方法。,说明
+1155,【强制】后台输送给页面的变量加 $!{var},2094,如果var等于null或者不存在，那么 ${var} 会直接显示在页面上。,说明
+1158,【推荐】视图模板中不加复杂逻辑,2095,根据MVC理论，视图的职责是展示，不要抢模型和控制器的活。,说明
+1160,【推荐】及时清理不再使用的代码/配置,2096,对于垃圾代码或过时配置，坚决清理干净，避免程序过度臃肿，代码冗余。,说明
+1160,【推荐】及时清理不再使用的代码/配置,3056,"对于暂时被注释掉，后续可能恢复使用的代码片断，在注释代码上方，统一规定使用三个斜杠(///)
+来说明注释掉代码的理由：
+public static void hello() {
+/// 业务方通知活动暂停
+// Business business = new Business();
+// business.active();
+System.out.println(""it's finished"");
+}",正例
+1161,【强制】错误码原则：快速溯源、沟通标准化,2097,错误码想得过于完美和复杂，就像康熙字典的生僻字一样，用词似乎精准，但是字典不容易随身携带且简单易懂。,说明
+1161,【强制】错误码原则：快速溯源、沟通标准化,3057,"错误码回答的问题是谁的错？错在哪？
+1）错误码必须能够快速知晓错误来源，可快速判断是谁的问题。
+2）错误码必须能够进行清晰地比对（代码中容易equals）。
+3）错误码有利于团队快速对错误原因达到一致认知。",正例
+1162,【强制】错误码不体现版本号和错误等级,2098,错误码以不断追加的方式进行兼容。错误等级由日志和错误码本身的释义来决定。,说明
+1164,【强制】错误码为 5 位字符串：来源 + 四位编号,2099,"错误产生来源分为A/B/C，A表示错误来源于用户，比如参数错误，用户安装版本过低，用户支付超时等问题；
+B表示错误来源于当前系统，往往是业务逻辑出错，或程序健壮性差等问题；C表示错误来源于第三方服务，比如CDN
+服务出错，消息投递超时等问题；四位数字编号从0001到9999，大类之间的步长间距预留100，参考文末附表3。",说明
+1166,【强制】避免随意定义新错误码，复用已有,2100,尽可能在原有错误码附表中找到语义相同或者相近的错误码在代码中使用即可。,说明
+1167,【强制】错误码不能直接输出给用户,2101,"堆栈（stack_trace）、错误信息(error_message) 、错误码（error_code）、提示信息（user_tip）是一个有效关
+联并互相转义的和谐整体，但是请勿互相越俎代庖。",说明
+1170,【参考】错误码分一/二/三级宏观错误码,2102,"在无法更加具体确定的错误场景中，可以直接使用一级宏观错误码，分别是：A0001（用户端错误）、B0001（系
+统执行出错）、C0001（调用第三方服务出错）。",说明
+1170,【参考】错误码分一/二/三级宏观错误码,3058,调用第三方服务出错是一级，中间件错误是二级，消息服务出错是三级。,正例
+1172,【参考】错误码利于跨文化协作,2103,英文单词形式的错误码不利于非英语母语国家（如阿拉伯语、希伯来语、俄罗斯语等）之间的开发者互相协作。,说明
+1173,【参考】纯数字错误码不利于感性记忆与分类,2104,数字是一个整体，每位数字的地位和含义是相同的。,说明
+1173,【参考】纯数字错误码不利于感性记忆与分类,4050,"一个五位数字12345，第1位是错误等级，第2位是错误来源，345是编号，人的大脑不会主动地拆开并分辨每
+位数字的不同含义。",反例
+1174,【强制】可预检查规避的 RuntimeException 用判断而非 catch,2105,"无法通过预检查的异常除外，比如，在解析字符串形式的数字时，可能存在数字格式错误，不得不通过catch
+NumberFormatException来实现。",说明
+1174,【强制】可预检查规避的 RuntimeException 用判断而非 catch,3059,if (obj != null) {...},正例
+1174,【强制】可预检查规避的 RuntimeException 用判断而非 catch,4051,try { obj.method(); } catch (NullPointerException e) {…},反例
+1175,【强制】异常不用于流程/条件控制,2106,异常设计的初衷是解决程序运行中的各种意外情况，且异常的处理效率比条件判断方式要低很多。,说明
+1176,【强制】catch 区分稳定/非稳定代码，区分异常类型,2107,"对大段代码进行try-catch，使程序无法根据不同的异常做出正确的应激反应，也不利于定位问题，这是一种不负
+责任的表现。",说明
+1176,【强制】catch 区分稳定/非稳定代码，区分异常类型,3060,"用户注册的场景中，如果用户输入非法字符，或用户名称已存在，或用户输入密码过于简单，在程序上作出分门
+别类的判断，并提示给用户。",正例
+1179,【强制】finally 必须关闭资源对象,2108,如果JDK7，可以使用try-with-resources方式。,说明
+1180,【强制】finally 中禁止 return,2109,"try块中的return语句执行成功后，并不马上返回，而是继续执行finally块中的语句，如果此处存在return语句，
+则会在此直接返回，无情丢弃掉try块中的返回点。",说明
+1180,【强制】finally 中禁止 return,4052,"private int x = 0;
+public int checkReturn() {
+try {
+// x等于1，此处不返回
+return ++x;
+} finally {
+// 返回的结果是2
+return ++x;
+}
+}",反例
+1181,【强制】捕获异常须完全匹配或为其父类,2110,如果预期对方抛的是绣球，实际接到的是铅球，就会产生意外情况。,说明
+1182,【强制】调 RPC/二方包/动态生成类用 Throwable 拦截,2111,"通过反射机制来调用方法，如果找不到方法，抛出NoSuchMethodException。什么情况会抛出
+NoSuchMethodError呢？二方包在类冲突时，仲裁机制可能导致引入非预期的版本使类的方法签名不匹配，或者在
+字节码修改框架（比如：ASM）动态创建或修改类时，修改了相应的方法签名。这些情况，即使代码编译期是正确
+的，但在代码运行期时，会抛出NoSuchMethodError。",说明
+1182,【强制】调 RPC/二方包/动态生成类用 Throwable 拦截,4053,"足迹服务引入了高版本的spring，导致运行到某段核心逻辑时，抛出NoSuchMethodError错误，catch用的
+类却是Exception，堆栈向上抛，影响到上层业务。这是一个非核心功能点影响到核心应用的典型反例。",反例
+1183,【推荐】返回值可为 null 时须注释说明,2112,"本规约明确防止NPE是调用者的责任。即使被调用方法返回空集合或者空对象，对调用者来说，也并非高枕无
+忧，必须考虑到远程调用失败，运行时异常等场景返回null的情况。",说明
+1184,【推荐】注意防止 NPE 的常见场景,3061,使用JDK8的Optional类来防止NPE问题。,正例
+1184,【推荐】注意防止 NPE 的常见场景,4054,"public int method() { return Integer对象; }，如果为null，自动解箱抛NPE。
+2）数据库的查询结果可能为null。
+3）集合里的元素即使isNotEmpty，取出的数据元素也可能为null。
+4）远程调用返回对象时，一律要求进行空指针判断，防止NPE。
+5）对于Session中获取的数据，建议进行NPE检查，避免空指针。
+6）级联调用obj.getA().getB().getC()；一连串调用，易产生NPE。",反例
+1186,【参考】对外 http/api 用错误码，内部用异常，RPC 用 Result,2113,"关于RPC方法返回方式使用Result方式的理由：
+1）使用抛异常返回方式，调用方如果没有捕获到就会产生运行时错误。
+2）如果不加栈信息，只是new自定义异常，加入自己的理解的error message，对于调用端解决问题的帮助不会太多。
+如果加了栈信息，在频繁调用出错的情况下，数据序列化和传输的性能损耗也是问题。",说明
+1187,【强制】用门面日志框架（SLF4J/JCL），不用实现类 API,2114,"日志框架（SLF4J、JCL--Jakarta Commons Logging）的使用方式（推荐使用SLF4J）
+使用SLF4J：
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+private static final Logger logger = LoggerFactory.getLogger(Test.class);
+使用JCL：
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+private static final Log log = LogFactory.getLog(Test.class);",说明
+1188,【强制】日志至少保存 15 天，并规范命名,3062,"以mppserver应用为例，日志保存/home/admin/mppserver/logs/mppserver.log，历史日志名称
+为mppserver.log.2021-11-28",正例
+1190,【强制】扩展日志命名 appName_logType_logName.log,2115,推荐对日志进行分类，将错误日志和业务日志分开放，便于开发人员查看，也便于通过日志对系统进行及时监控。,说明
+1190,【强制】扩展日志命名 appName_logType_logName.log,3063,mppserver应用中单独监控时区转换异常，如：mppserver_monitor_timeZoneConvert.log,正例
+1191,【强制】日志字符串拼接用占位符,2116,"因为String字符串的拼接会使用StringBuilder的append() 方式，有一定的性能损耗。使用占位符仅是替换动
+作，可以有效提升性能。",说明
+1191,【强制】日志字符串拼接用占位符,3064,"logger.debug(""Processing trade with id : {} and symbol : {}"", id, symbol);",正例
+1192,【强制】trace/debug/info 输出前做级别开关判断,2117,"虽然在debug(参数) 的方法体内第一行代码isDisabled(Level.DEBUG_INT) 为真时（Slf4j的常见实现Log4j和
+Logback），就直接return，但是参数可能会进行字符串拼接运算。此外，如果debug(getName()) 这种参数内有
+getName() 方法调用，无谓浪费方法调用的开销。",说明
+1192,【强制】trace/debug/info 输出前做级别开关判断,3065,"// 如果判断为真，那么可以输出trace和debug级别的日志
+if (logger.isDebugEnabled()) {
+logger.debug(""Current ID is: {} and name is: {}"", id, getName());
+}",正例
+1193,【强制】避免重复打印，设 additivity=false,3066,"<logger name=""com.taobao.dubbo.config"" additivity=""false"">",正例
+1194,【强制】生产禁 System.out/err 和 printStackTrace,2118,"标准日志输出与标准错误输出文件每次Jboss重启时才滚动，如果大量输出送往这两个文件，容易造成文件大小
+超过操作系统大小限制。",说明
+1195,【强制】异常日志含案发现场与堆栈信息,3067,"logger.error(""inputParams: {} and errorMessage: {}"", 各类参数或者对象toString(), e.getMessage(), e);",正例
+1196,【强制】日志禁止直接用 JSON 工具转对象,2119,如果对象里某些get方法被覆写，存在抛出异常的情况，则可能会因为打印日志而影响正常业务流程的执行。,说明
+1196,【强制】日志禁止直接用 JSON 工具转对象,3068,打印日志时仅打印出业务相关属性值或者调用其对象的toString() 方法。,正例
+1197,【推荐】谨慎记录日志，生产禁 debug,2120,"大量地输出无效日志，不利于系统性能提升，也不利于快速定位错误点。记录日志时请思考：这些日志真的有
+人看吗？看到这条日志你能做什么？能不能给问题排查带来好处？",说明
+1198,【推荐】用户参数错误用 warn 级别,2121,注意日志输出的级别，error级别只记录系统逻辑出错、异常或者重要的错误信息。,说明
+1199,【推荐】日志错误信息尽量英文描述,2122,国际化团队或海外部署的服务器由于字符集问题，使用全英文来注释和描述日志错误信息。,说明
+1200,【推荐】日志中用户敏感信息脱敏,2123,日志排查问题时，推荐使用订单号、UUID之类的唯一编号进行查询。,说明
+1201,【强制】单元测试遵守 AIR 原则（自动化/独立/可重复）,2124,"单元测试在线上运行时，感觉像空气（AIR）一样感觉不到，但在测试质量的保障上，却是非常关键的。好的单元
+测试宏观上来说，具有自动化、独立性、可重复执行的特点。
+⚫ A：Automatic（自动化）
+⚫ I：Independent（独立性）
+⚫ R：Repeatable（可重复）",说明
+1203,【强制】单测用例保持独立，不互相调用,4055,method2需要依赖method1的执行，将执行结果作为method2的输入。,反例
+1204,【强制】单测可重复执行，不受外界环境影响,2125,"单元测试通常会被放到持续集成中，每次有代码push时单元测试都会被执行。如果单测对外部环境（网络、服
+务、中间件等）有依赖，容易导致持续集成机制的不可用。",说明
+1204,【强制】单测可重复执行，不受外界环境影响,3069,"为了不受外界环境影响，要求设计代码时就把SUT（Software under test）的依赖改成注入，在测试时用Spring
+这样的DI框架注入一个本地（内存）实现或者Mock实现。",正例
+1205,【强制】单测粒度小（类级或方法级）,2126,"测试粒度小才能在出错时尽快定位到出错的位置。单元测试不负责检查跨类或者跨系统的交互逻辑，那是集成测试
+的领域。",说明
+1206,【强制】核心业务增量代码单测通过,2127,新增代码及时补充单元测试，如果新增代码影响了原有单元测试，请及时修正。,说明
+1207,【强制】单测代码放 src/test/java,2128,源码编译时会跳过此目录，而单元测试框架默认是扫描此目录。,说明
+1208,【推荐】语句覆盖率 70%，核心模块 100%,2129,在工程规约的应用分层中提到的DAO层，Manager层，可重用度高的Service，都应该进行单元测试。,说明
+1210,【推荐】用程序插入/导入方式准备测试数据,4056,"删除某一行数据的单元测试，在数据库中，先直接手动增加一行作为删除目标，但是这一行新增数据并不符合业
+务插入规则，导致测试结果异常。",反例
+1211,【推荐】数据库单测自动回滚或加前后缀标识,3070,在基础技术部的内部单元测试中，使用FOUNDATION_UNIT_TEST_的前缀来标识单元测试相关代码。,正例
+1215,【参考】便于单测的代码习惯（构造/全局/依赖/条件精简）,2130,多层条件语句建议使用卫语句、策略模式、状态模式等方式重构。,说明
+1217,【强制】用户个人页面/功能必须权限校验,2131,防止没有做水平权限校验就可随意访问、修改、删除别人的数据，比如查看他人的私信内容。,说明
+1218,【强制】敏感数据脱敏展示,3071,中国大陆个人手机号码显示：139****1219，隐藏中间4位，防止隐私泄露。,正例
+1219,【强制】参数绑定防 SQL 注入,4057,"某系统签名大量被恶意修改，即是因为对于危险字符#--没有进行转义，导致数据库更新时，where后边的信息被注
+释掉，对全库进行更新。",反例
+1220,【强制】用户请求参数必须有效性验证,2132,"忽略参数校验可能导致：
+⚫ 页面page size过大导致内存溢出
+⚫ 恶意order by导致数据库慢查询
+⚫ 缓存击穿
+⚫ SSRF
+⚫ 任意重定向
+⚫ SQL注入，Shell注入，反序列化注入
+⚫ 正则输入源串拒绝服务ReDoS
+扩展：Java代码用正则来验证客户端的输入，有些正则写法验证普通用户输入没有问题，但是如果攻击人员使
+用的是特殊构造的字符串来验证，有可能导致死循环的结果。",说明
+1221,【强制】防 XSS，禁止输出未转义用户数据,2133,"XSS跨站脚本攻击。它指的是恶意攻击者往Web页面里插入恶意html代码，当用户浏览时，嵌入其中Web里
+面的html代码会被执行，造成获取用户cookie、钓鱼、获取用户页面数据、蠕虫、挂马等危害。",说明
+1222,【强制】表单/AJAX 做 CSRF 安全验证,2134,"CSRF (Cross-site request forgery) 跨站请求伪造是一类常见编程漏洞。对于存在CSRF漏洞的应用/网站，攻击
+者可以事先构造好URL，只要受害者用户一访问，后台便在用户不知情的情况下对数据库中用户参数进行相应修改。",说明
+1223,【强制】外部重定向目标做白名单过滤,2135,攻击者通过恶意构造跳转的链接，可以向受害者发起钓鱼攻击。,说明
+1224,【强制】平台资源防重放（限频/验证码）,2136,"如注册时发送验证码到手机，如果没有限制次数和频率，那么可以利用此功能骚扰到其它用户，并造成短信平台
+资源浪费。",说明
+1225,【强制】文件上传严格检查大小与类型,2137,攻击者可以利用上传漏洞，上传恶意文件到服务器，并且远程执行，达到控制网站服务器的目的。,说明
+1228,【强制】是与否字段用 is_xxx + unsigned tinyint,2138,"POJO类中的任何布尔类型的变量，都不要加is前缀，所以，需要在<resultMap>设置从is_xxx到Xxx的映射关
+系。数据库表示是与否的值，使用tinyint类型，坚持is_xxx的命名方式是为了明确其取值含义与取值范围。
+任何字段如果为非负数，必须是unsigned。",说明
+1228,【强制】是与否字段用 is_xxx + unsigned tinyint,3072,表达逻辑删除的字段名is_deleted，1表示删除，0表示未删除。,正例
+1229,【强制】表名/字段名小写，禁止数字开头,2139,"MySQL在Windows下不区分大小写，但在Linux下默认是区分大小写。因此，数据库名、表名、字段名，都不允
+许出现任何大写字母，避免节外生枝。",说明
+1229,【强制】表名/字段名小写，禁止数字开头,3073,aliyun_admin，rdc_config，level3_name,正例
+1229,【强制】表名/字段名小写，禁止数字开头,4058,AliyunAdmin，rdcConfig，level_3_name,反例
+1230,【强制】表名不使用复数,2140,表名应该仅仅表示表里面的实体内容，不应该表示实体数量，对应于DO类名也是单数形式，符合表达习惯。,说明
+1232,【强制】索引名用 pk_/uk_/idx_ 前缀,2141,pk_即primary key；uk_即unique key；idx_即index的简称。,说明
+1233,【强制】小数类型用 decimal，禁用 float/double,2142,"在存储的时候，float和double都存在精度损失的问题，很可能在比较值的时候，得到不正确的结果。如果存
+储的数据范围超过decimal的范围，建议将数据拆成整数和小数并分开存储。",说明
+1236,【强制】表必备 id/create_time/update_time 三字段,2143,"其中id必为主键，类型为bigint unsigned、单表时自增、步长为1。create_time，update_time的类型均为
+datetime类型，如果要记录时区信息，那么类型设置为timestamp。",说明
+1237,【强制】用逻辑删除，不用物理删除,2144,"逻辑删除在数据删除后可以追溯到行为操作。不过会使得一些情况下的唯一主键变得不唯一，需要根据情况来酌
+情解决。",说明
+1238,【推荐】表名遵循“业务名称_表的作用”,3074,alipay_task / force_project / trade_config / tes_question,正例
+1241,【推荐】字段适当冗余（非频繁改/非唯一索引/非超长）,3075,各业务线经常冗余存储商品名称，避免查询时需要调用IC服务获取。,正例
+1242,【推荐】超 500 万行或 2GB 才分库分表,2145,如果预计三年后的数据量根本达不到这个级别，请不要在创建表时就分库分表。,说明
+1243,【参考】合适字符长度提升检索速度,3076,"无符号值可以避免误存负数，且扩大了表示范围：
+对象 年龄区间 类型 字节 表示范围
+人 150岁之内 tinyint unsigned 1 无符号值：0到255
+龟 数百岁 smallint unsigned 2 无符号值：0到65535
+恐龙化石 数千万年 int unsigned 4 无符号值：0到约43亿
+太阳 约50亿年 bigint unsigned 8 无符号值：0到约10的19次方",正例
+1244,【强制】唯一特性字段建唯一索引,2146,"不要以为唯一索引影响了insert速度，这个速度损耗可以忽略，但提高查找速度是明显的；另外，即使在应用层
+做了非常完善的校验控制，只要没有唯一索引，根据墨菲定律，必然有脏数据产生。",说明
+1245,【强制】超三表禁 join，join 字段类型一致且建索引,2147,即使双表join也要注意表索引、SQL性能。,说明
+1246,【强制】varchar 建索引必须指定长度,2148,"索引的长度与区分度是一对矛盾体，一般对字符串类型数据，长度为20的索引，区分度会高达90%以上，可以使
+用count(distinct left(列名，索引长度)) / count(*) 的区分度来确定。",说明
+1247,【强制】页面搜索禁左模糊/全模糊,2149,索引文件具有B-Tree的最左前缀匹配特性，如果左边的值未确定，那么无法使用此索引。,说明
+1248,【推荐】order by 利用索引有序性避免 filesort,3077,where a = ? and b = ? order by c；索引：a_b_c,正例
+1248,【推荐】order by 利用索引有序性避免 filesort,4059,索引如果存在范围查询，那么索引有序性无法利用，如：WHERE a > 10 ORDER BY b；索引a_b无法排序。,反例
+1249,【推荐】利用覆盖索引避免回表,2150,"如果一本书需要知道第11章是什么标题，会翻开第11章对应的那一页吗？目录浏览一下就好，这个目录就是起
+到覆盖索引的作用。",说明
+1249,【推荐】利用覆盖索引避免回表,3078,"能够建立索引的种类分为主键索引、唯一索引、普通索引三种，而覆盖索引只是一种查询的一种效果，用explain
+的结果，extra列会出现：using index。",正例
+1250,【推荐】延迟关联/子查询优化深分页,2151,"MySQL并不是跳过offset行，而是取offset+N行，然后返回放弃前offset行，返回N行，那当offset特别大
+的时候，效率就非常的低下，要么控制返回的总页数，要么对超过特定阈值的页数进行SQL改写。",说明
+1250,【推荐】延迟关联/子查询优化深分页,3079,"先快速定位需要获取的id段，然后再关联：
+SELECT t1.* FROM表1 as t1 , (select id from表1 where条件LIMIT 100000 , 20) as t2 where t1.id = t2.id",正例
+1251,【推荐】SQL 优化目标达到 range 以上（ref/const）,2152,"1）consts单表中最多只有一个匹配行（主键或者唯一索引），在优化阶段即可读取到数据。
+2）ref指的是使用普通的索引（normal index）。
+3）range对索引进行范围检索。",说明
+1251,【推荐】SQL 优化目标达到 range 以上（ref/const）,4060,"explain表的结果，type = index，索引物理文件全扫描，速度非常慢，这个index级别比较range还低，与全
+表扫描是小巫见大巫。",反例
+1252,【推荐】组合索引区分度最高的在最左,2153,"存在非等号和等号混合判断条件时，在建索引时，请把等号条件的列前置。如：where c > ? and d = ? 那么即使
+c的区分度更高，也必须把d放在索引的最前列，即建立组合索引idx_d_c。",说明
+1252,【推荐】组合索引区分度最高的在最左,3080,如果where a = ? and b = ?，a列的几乎接近于唯一值，那么只需要单建idx_a索引即可。,正例
+1255,【强制】统计行数用 count(*),2154,count(*) 会统计值为NULL的行，而count(列名) 不会统计此列为NULL值的行。,说明
+1257,【强制】sum 全 NULL 列返回 NULL，需防 NPE,3081,"可以使用如下方式来避免sum的NPE问题：SELECT IFNULL(SUM(column) , 0) FROM table;",正例
+1258,【强制】用 ISNULL() 判断 NULL 值,2155,"NULL与任何值的直接比较都为NULL。
+1）NULL<>NULL的返回结果是NULL，而不是false。
+2）NULL=NULL的返回结果是NULL，而不是true。
+3）NULL<>1的返回结果是NULL，而不是true。",说明
+1258,【强制】用 ISNULL() 判断 NULL 值,4061,"在SQL语句中，如果在null前换行，影响可读性。
+select * from table where column1 is null and column3 is not null；而ISNULL(column) 是一个整体，简洁易懂。
+从性能数据上分析，ISNULL(column) 执行效率更快一些。",反例
+1260,【强制】禁止外键与级联，外键概念在应用层解决,2156,"（概念解释）学生表中的student_id是主键，那么成绩表中的student_id则为外键。如果更新学生表中的
+student_id，同时触发成绩表中的student_id更新，即为级联更新。外键与级联更新适用于单机低并发，不适合分布式、
+高并发集群；级联更新是强阻塞，存在数据库更新风暴的风险；外键影响数据库的插入速度。",说明
+1263,【强制】多表操作列名前加表别名限定,2157,"对多表进行查询记录、更新记录、删除记录时，如果对操作列没有限定表的别名（或表名），并且操作列在多个
+表中存在时，就会抛异常。",说明
+1263,【强制】多表操作列名前加表别名限定,3082,"select t1.name from first_table as t1 , second_table as t2 where t1.id = t2.id;",正例
+1263,【强制】多表操作列名前加表别名限定,4062,"在某业务中，由于多表关联查询语句没有加表的别名（或表名）的限制，正常运行两年后，最近在某个表中增加
+一个同名字段，在预发布环境做数据库变更后，线上查询语句出现出1052异常：
+Column 'name' infield list is ambiguous。",反例
+1264,【推荐】表别名前加 as，按 t1/t2/t3 命名,2158,"1）别名可以是表的简称，或者是依照表在SQL语句中出现的顺序，以t1、t2、t3的方式命名。
+2）别名前加as使别名更容易识别。",说明
+1264,【推荐】表别名前加 as，按 t1/t2/t3 命名,3083,"select t1.name from first_table as t1 , second_table as t2 where t1.id = t2.id;",正例
+1266,【参考】字符存储统一 utf8mb4 字符集,2159,"SELECT LENGTH(""轻松工作"")；--返回为12
+SELECT CHARACTER_LENGTH(""轻松工作"")；--返回为4
+表情需要用utf8mb4来进行存储，注意它与utf8编码的区别。",说明
+1267,【参考】不建议使用 TRUNCATE TABLE,2160,TRUNCATE TABLE在功能上与不带WHERE子句的DELETE语句相同。,说明
+1268,【强制】查询禁 select *，明确字段列表,2161,"1）增加查询分析器解析成本。
+2）增减字段容易与resultMap配置不一致。
+3）无用字段增加网络消耗，尤其是text类型的字段。",说明
+1269,【强制】布尔字段在 resultMap 中做 is_xxx 映射,2162,参见定义POJO类以及数据库字段定义规定，在sql.xml增加映射，是必须的。,说明
+1270,【强制】用 <resultMap> 而非 resultClass,2163,配置映射关系，使字段与DO类解耦，方便维护。,说明
+1272,【强制】不推荐 queryForList 分页,2164,"其实现方式是在数据库取到statementName对应的SQL语句的所有记录，再通过subList取start，size
+的子集合，线上因为这个原因曾经出现过OOM。",说明
+1272,【强制】不推荐 queryForList 分页,3084,"Map<String, Object> map = new HashMap<>(16);
+map.put(""start"", start);
+map.put(""size"", size);",正例
+1273,【强制】查询结果集不用 HashMap/Hashtable,4063,"某同学为避免写一个<resultMap>xxx</resultMap>，直接使用Hashtable来接收数据库返回结果，结果出现
+日常是把bigint转成Long值，而线上由于数据库版本不一样，解析成BigInteger，导致线上问题。",反例
+1281,【强制】GAV 定义规范（GroupId 最多 4 级）,2165,{公司/BU}例如：alibaba / taobao / tmall / kaikeba等BU一级；子业务线可选。,说明
+1281,【强制】GAV 定义规范（GroupId 最多 4 级）,3085,"com.taobao.jstorm或com.alibaba.dubbo.register
+2）ArtifactId格式：产品线名-模块名。语义不重复不遗漏，先到中央仓库去查证一下。
+dubbo-client / fastjson-api / jstorm-tool
+3）Version：详细规定参考下方。",正例
+1282,【强制】版本号主.次.修订三段式命名,2166,注意起始版本号必须为：1.0.0，而不是0.0.1。,说明
+1282,【强制】版本号主.次.修订三段式命名,4064,仓库内某二方库版本号从1.0.0.0开始，一直默默“升级”成1.0.0.64，完全失去版本的语义信息。,反例
+1283,【强制】线上禁依赖 SNAPSHOT，RELEASE 不覆盖,2167,不依赖SNAPSHOT版本是保证应用发布的幂等性。另外，也可以加快编译时的打包构建。,说明
+1284,【强制】二方库升级保持 jar 仲裁结果不变,2168,"在升级时，进行dependency:resolve前后信息比对，如果仲裁结果完全不一致，那么通过dependency:tree命
+令，找出差异点，进行<exclude>排除jar包。",说明
+1286,【强制】定制包命名加“-英文说明[序号]”,2169,"fastjson给SCM定制的版本号：1.0.0-SCM1。注：请尽可能在应用端来解决类冲突和加载问题，避免随意发布此
+类定制包。",说明
+1287,【强制】依赖二方库群定义统一版本变量,2170,"依赖springframework-core，-context，-beans，它们都是同一个版本，可以定义一个变量来保存版本：
+${spring.version}，定义依赖的时候，引用该版本。",说明
+1288,【强制】禁止相同 GroupId/ArtifactId 不同 Version,2171,"在本地调试时会使用各子项目指定的版本号，但是合并成一个war，只能有一个版本号出现在最后的lib目录
+中。曾经出现过线下调试是正确的，发布到线上却出故障的先例。",说明
+1290,【推荐】依赖放 dependencies，版本仲裁放 dependencyManagement,2172,"<dependencyManagement>里只是声明版本，并不实现引入，因此子项目需要显式的声明依赖，version和
+scope都读取自父pom。而<dependencies>所有声明在主pom的<dependencies>里的依赖都会自动引入，并默
+认被所有的子项目继承。",说明
+1292,【推荐】不使用不稳定的工具包/Utils,2173,"不稳定指的是提供方无法做到向下兼容，在编译阶段正常，但在运行时产生异常，因此，尽量使用业界稳定的
+二方工具包。",说明
+1294,【强制】远程调用必须设置超时,2174,"类似于HttpClient的超时设置需要自己明确去设置Timeout。根据经验表明，无数次的故障都是因为没有设置
+超时时间。",说明
+1296,【推荐】高并发服务器调小 time_wait,2175,"操作系统默认240秒后，才会关闭处于time_wait状态的连接，在高并发访问下，服务器端会因为处于
+time_wait的连接数太多，可能无法建立新的连接，所以需要在服务器上调小此等待值。",说明
+1296,【推荐】高并发服务器调小 time_wait,3086,在linux服务器上请通过变更/etc/sysctl.conf文件去修改该缺省值（秒）：net.ipv4.tcp_fin_timeout=30,正例
+1297,【推荐】调大最大文件句柄数,2176,"主流操作系统的设计是将TCP / UDP连接采用与文件一样的方式去管理，即一个连接对应于一个fd。主流的linux
+服务器默认所支持最大fd数量为1024，当并发连接数很大时很容易因为fd不足而出现“open too many files”错误，
+导致新的连接无法建立。建议将linux服务器所支持的最大句柄数调高数倍（与服务器的内存数量相关）。",说明
+1298,【推荐】JVM 加 HeapDumpOnOutOfMemoryError,2177,OOM的发生是有概率的，甚至相隔数月才出现一例，出错时的堆内信息对解决问题非常有帮助。,说明
+1302,【强制】存储方案与数据结构设计评审通过并成文,2178,"有缺陷的底层数据结构容易导致系统风险上升，可扩展性下降，重构成本也会因历史数据迁移和系统平滑过渡而
+陡然增加，所以，存储方案和数据结构需要认真地进行设计和评审，生产环境提交执行后，需要进行double check。",说明
+1302,【强制】存储方案与数据结构设计评审通过并成文,3087,"评审内容包括存储介质选型、表结构设计能否满足技术方案、存取性能和存储空间能否满足业务发展、表或字段
+之间的辩证关系、字段名称、字段类型、索引等；数据结构变更（如在原有表中新增字段）也需要在评审通过后上线。",正例
+1304,【强制】对象状态超 3 个用状态图,2179,"状态图的核心是对象状态，首先明确对象有多少种状态，然后明确两两状态之间是否存在直接转换关系，再明确
+触发状态转换的条件是什么。",说明
+1304,【强制】对象状态超 3 个用状态图,3088,"淘宝订单状态有已下单、待付款、已付款、待发货、已发货、已收货等。比如已下单与已收货这两种状态之间是
+不可能有直接转换关系的。",正例
+1305,【强制】调用链对象超 3 个用时序图,2180,时序图反映了一系列对象间的交互与协作关系，清晰立体地反映系统的调用纵深链路。,说明
+1306,【强制】模型类超 5 个用类图,2181,类图像建筑领域的施工图，如果搭平房，可能不需要，但如果建造蚂蚁Z空间大楼，肯定需要详细的施工图。,说明
+1307,【强制】协作对象超 2 个用活动图,2182,活动图是流程图的扩展，增加了能够体现协作关系的对象泳道，支持表示并发等。,说明
+1308,【强制】识别弱依赖设计降级与应急预案,2183,"系统依赖的第三方服务被降级或屏蔽后，依然不会影响主干流程继续进行，仅影响信息展示、或消息通知等非关
+键功能，那么这些服务称为弱依赖。",说明
+1308,【强制】识别弱依赖设计降级与应急预案,3089,"当系统弱依赖于多个外部服务时，如果下游服务耗时过长，则会严重影响当前调用者，必须采取相应降级措施，
+比如，当调用链路中某个下游服务调用的平均响应时间或错误率超过阈值时，系统自动进行降级或熔断操作，屏蔽弱依
+赖负面影响，保护当前系统主干功能可用。",正例
+1308,【强制】识别弱依赖设计降级与应急预案,4065,"某个疫情相关的二维码出错：“服务器开了点小差，请稍后重试”，不可用时长持续很久，引起社会高度关注，
+原因可能为调用的外部依赖服务RT过高而导致系统假死，而在显示端没有做降级预案，只能直接抛错给用户。",反例
+1311,【推荐】类设计符合单一职责原则,2184,单一原则最易理解却是最难实现的一条规则，随着系统演进，很多时候，忘记了类设计的初衷。,说明
+1312,【推荐】优先聚合/组合，慎用继承,2185,"不得已使用继承的话，必须符合里氏代换原则，此原则说父类能够出现的地方子类一定能够出现，比如，“把
+钱交出来”，钱的子类美元、欧元、人民币等都可以出现。",说明
+1313,【推荐】依赖倒置，依赖抽象与接口,2186,低层次模块依赖于高层次模块的抽象，方便系统间的解耦。,说明
+1314,【推荐】对扩展开放、对修改闭合,2187,极端情况下，交付的代码是不可修改的，同一业务域内的需求变化，通过模块或类的扩展来实现。,说明
+1315,【推荐】共性抽取公共模块，遵循 DRY,2188,"随着代码的重复次数不断增加，维护成本指数级上升。随意复制和粘贴代码，必然会导致代码的重复，在维护代
+码时，需要修改所有的副本，容易遗漏。必要时抽取共性方法，或者抽象公共类，甚至是组件化。",说明
+1315,【推荐】共性抽取公共模块，遵循 DRY,3090,"一个类中有多个public方法，都需要进行数行相同的参数校验操作，这个时候请抽取：
+private boolean checkParam(DTO dto) {...}",正例
+1316,【推荐】正确理解敏捷开发,2189,"敏捷开发是快速交付迭代可用的系统，省略多余的设计方案，摒弃传统的审批流程，但核心关键点上的必要设计
+和文档沉淀是需要的。",说明
+1316,【推荐】正确理解敏捷开发,4066,"某团队为了业务快速发展，敏捷成了产品经理催进度的借口，系统中均是勉强能运行但像面条一样的代码，可
+维护性和可扩展性极差，一年之后，不得不进行大规模重构，得不偿失。",反例
+1317,【参考】设计文档明确需求/理顺逻辑/指导维护,2190,避免为了设计而设计，系统设计文档有助于后期的系统维护和重构，所以设计结果需要进行分类归档保存。,说明
+1318,【参考】可扩展性的本质是隔离变化点,2191,世间众多设计模式其实就是一种设计模式即隔离变化点的模式。,说明
+1318,【参考】可扩展性的本质是隔离变化点,3091,极致扩展性的标志，就是需求的新增，不会在原有代码交付物上进行任何形式的修改。,正例
+1319,【参考】设计的本质是识别并表达难点,2192,"识别和表达完全是两回事，很多人错误地认为识别到系统难点在哪里，表达只是自然而然的事情，但是大家在
+设计评审中经常出现语焉不详，甚至是词不达意的情况。准确地表达系统难点需要具备如下能力：表达规则和表达工
+具的熟练性。抽象思维和总结能力的局限性。基础知识体系的完备性。深入浅出的生动表达力。",说明
+1320,【参考】代码即文档的观点是错误的,2193,代码的深度调用，模块层面上的依赖关系网，业务场景逻辑，非功能性需求等问题要相应的文档来完整地呈现。,说明
+1321,【参考】无障碍设计要点（tab 聚焦/验证码/控件交互）,3092,"登录场景中，输入框的按钮都需要考虑tab键聚焦，符合自然逻辑的操作顺序如下，""输入用户名，输入密码，输
+入验证码，点击登录""，其中验证码实现语音验证方式。如有自定义标签实现的控件设置控件类型可使用role属性。",正例
+8,专有名词解释,5001,POJO（Plain Ordinary Java Object）,包含
+5001,POJO（Plain Ordinary Java Object）,2194,POJO：仅含 setter/getter/toString 的简单类（含 DO/DTO/BO/VO）,说明
+8,专有名词解释,5002,DO（Data Object）,包含
+5002,DO（Data Object）,2195,DO：与数据库表一一对应的 POJO，经 DAO 层向上传输,说明
+8,专有名词解释,5003,PO（Persistent Object）,包含
+5003,PO（Persistent Object）,2196,PO：与 DO 同义，数据库表一一对应的 POJO 类,说明
+8,专有名词解释,5004,DTO（Data Transfer Object）,包含
+5004,DTO（Data Transfer Object）,2197,DTO：Service/Manager 向外传输的数据对象,说明
+8,专有名词解释,5005,BO（Business Object）,包含
+5005,BO（Business Object）,2198,BO：Service 层输出、封装业务逻辑的对象,说明
+8,专有名词解释,5006,Query,包含
+5006,Query,2199,Query：数据查询对象，超 2 参数禁止用 Map,说明
+8,专有名词解释,5007,VO（View Object）,包含
+5007,VO（View Object）,2200,VO：Web 向模板渲染引擎传输的显示层对象,说明
+8,专有名词解释,5008,CAS（Compare And Swap）,包含
+5008,CAS（Compare And Swap）,2201,CAS：硬件级原子操作（比较并交换），降低锁开销,说明
+8,专有名词解释,5009,GAV（GroupId、ArtifactId、Version）,包含
+5009,GAV（GroupId、ArtifactId、Version）,2202,GAV：Maven 坐标，唯一标识 jar 包,说明
+8,专有名词解释,5010,OOP（Object Oriented Programming）,包含
+5010,OOP（Object Oriented Programming）,2203,OOP：本文泛指类与对象的编程处理方式,说明
+8,专有名词解释,5011,AQS（AbstractQueuedSynchronizer）,包含
+5011,AQS（AbstractQueuedSynchronizer）,2204,AQS：FIFO 队列实现的底层同步工具，ReentrantLock 等的基础,说明
+8,专有名词解释,5012,ORM（Object Relation Mapping）,包含
+5012,ORM（Object Relation Mapping）,2205,ORM：对象关系映射，本文泛指 iBATIS/mybatis,说明
+8,专有名词解释,5013,NPE（java.lang.NullPointerException）,包含
+5013,NPE（java.lang.NullPointerException）,2206,NPE：空指针异常,说明
+8,专有名词解释,5014,OOM（Out Of Memory）,包含
+5014,OOM（Out Of Memory）,2207,OOM：内存不足异常（OutOfMemoryError）,说明
+8,专有名词解释,5015,GMT（Greenwich Mean Time）,包含
+5015,GMT（Greenwich Mean Time）,2208,GMT：格林尼治标准时间，现标准为 UTC,说明
+8,专有名词解释,5016,一方库,包含
+5016,一方库,2209,一方库：本工程内部子项目依赖的 jar 包,说明
+8,专有名词解释,5017,二方库,包含
+5017,二方库,2210,二方库：公司内部发布供内部应用依赖的 jar 包,说明
+8,专有名词解释,5018,三方库,包含
+5018,三方库,2211,三方库：公司之外的开源 jar 包,说明
+9,错误码列表,6001,00000,包含
+6001,00000,2212,00000：一切 OK（正确执行后的返回）,说明
+9,错误码列表,6002,A0001,包含
+6002,A0001,2213,A0001：用户端错误（一级宏观错误码）,说明
+9,错误码列表,6003,A0100,包含
+6003,A0100,2214,A0100：用户注册错误（二级宏观错误码）,说明
+9,错误码列表,6004,A0101,包含
+6004,A0101,2215,A0101：用户未同意隐私协议,说明
+9,错误码列表,6005,A0102,包含
+6005,A0102,2216,A0102：注册国家或地区受限,说明
+9,错误码列表,6006,A0110,包含
+6006,A0110,2217,A0110：用户名校验失败,说明
+9,错误码列表,6007,A0111,包含
+6007,A0111,2218,A0111：用户名已存在,说明
+9,错误码列表,6008,A0112,包含
+6008,A0112,2219,A0112：用户名包含敏感词,说明
+9,错误码列表,6009,A0113,包含
+6009,A0113,2220,A0113：用户名包含特殊字符,说明
+9,错误码列表,6010,A0120,包含
+6010,A0120,2221,A0120：密码校验失败,说明
+9,错误码列表,6011,A0121,包含
+6011,A0121,2222,A0121：密码长度不够,说明
+9,错误码列表,6012,A0122,包含
+6012,A0122,2223,A0122：密码强度不够,说明
+9,错误码列表,6013,A0130,包含
+6013,A0130,2224,A0130：校验码输入错误,说明
+9,错误码列表,6014,A0131,包含
+6014,A0131,2225,A0131：短信校验码输入错误,说明
+9,错误码列表,6015,A0132,包含
+6015,A0132,2226,A0132：邮件校验码输入错误,说明
+9,错误码列表,6016,A0133,包含
+6016,A0133,2227,A0133：语音校验码输入错误,说明
+9,错误码列表,6017,A0140,包含
+6017,A0140,2228,A0140：用户证件异常,说明
+9,错误码列表,6018,A0141,包含
+6018,A0141,2229,A0141：用户证件类型未选择,说明
+9,错误码列表,6019,A0142,包含
+6019,A0142,2230,A0142：大陆身份证编号校验非法,说明
+9,错误码列表,6020,A0143,包含
+6020,A0143,2231,A0143：护照编号校验非法,说明
+9,错误码列表,6021,A0144,包含
+6021,A0144,2232,A0144：军官证编号校验非法,说明
+9,错误码列表,6022,A0150,包含
+6022,A0150,2233,A0150：用户基本信息校验失败,说明
+9,错误码列表,6023,A0151,包含
+6023,A0151,2234,A0151：手机格式校验失败,说明
+9,错误码列表,6024,A0152,包含
+6024,A0152,2235,A0152：地址格式校验失败,说明
+9,错误码列表,6025,A0153,包含
+6025,A0153,2236,A0153：邮箱格式校验失败,说明
+9,错误码列表,6026,A0200,包含
+6026,A0200,2237,A0200：用户登录异常（二级宏观错误码）,说明
+9,错误码列表,6027,A0201,包含
+6027,A0201,2238,A0201：用户账户不存在,说明
+9,错误码列表,6028,A0202,包含
+6028,A0202,2239,A0202：用户账户被冻结,说明
+9,错误码列表,6029,A0203,包含
+6029,A0203,2240,A0203：用户账户已作废,说明
+9,错误码列表,6030,A0210,包含
+6030,A0210,2241,A0210：用户密码错误,说明
+9,错误码列表,6031,A0211,包含
+6031,A0211,2242,A0211：用户输入密码错误次数超限,说明
+9,错误码列表,6032,A0220,包含
+6032,A0220,2243,A0220：用户身份校验失败,说明
+9,错误码列表,6033,A0221,包含
+6033,A0221,2244,A0221：用户指纹识别失败,说明
+9,错误码列表,6034,A0222,包含
+6034,A0222,2245,A0222：用户面容识别失败,说明
+9,错误码列表,6035,A0223,包含
+6035,A0223,2246,A0223：用户未获得第三方登录授权,说明
+9,错误码列表,6036,A0230,包含
+6036,A0230,2247,A0230：用户登录已过期,说明
+9,错误码列表,6037,A0240,包含
+6037,A0240,2248,A0240：用户验证码错误,说明
+9,错误码列表,6038,A0241,包含
+6038,A0241,2249,A0241：用户验证码尝试次数超限,说明
+9,错误码列表,6039,A0300,包含
+6039,A0300,2250,A0300：访问权限异常（二级宏观错误码）,说明
+9,错误码列表,6040,A0301,包含
+6040,A0301,2251,A0301：访问未授权,说明
+9,错误码列表,6041,A0302,包含
+6041,A0302,2252,A0302：正在授权中,说明
+9,错误码列表,6042,A0303,包含
+6042,A0303,2253,A0303：用户授权申请被拒绝,说明
+9,错误码列表,6043,A0310,包含
+6043,A0310,2254,A0310：因访问对象隐私设置被拦截,说明
+9,错误码列表,6044,A0311,包含
+6044,A0311,2255,A0311：授权已过期,说明
+9,错误码列表,6045,A0312,包含
+6045,A0312,2256,A0312：无权限使用 API,说明
+9,错误码列表,6046,A0320,包含
+6046,A0320,2257,A0320：用户访问被拦截,说明
+9,错误码列表,6047,A0321,包含
+6047,A0321,2258,A0321：黑名单用户,说明
+9,错误码列表,6048,A0322,包含
+6048,A0322,2259,A0322：账户被冻结,说明
+9,错误码列表,6049,A0323,包含
+6049,A0323,2260,A0323：非法 IP 地址,说明
+9,错误码列表,6050,A0324,包含
+6050,A0324,2261,A0324：网关访问受限,说明
+9,错误码列表,6051,A0325,包含
+6051,A0325,2262,A0325：地域黑名单,说明
+9,错误码列表,6052,A0330,包含
+6052,A0330,2263,A0330：服务已欠费,说明
+9,错误码列表,6053,A0340,包含
+6053,A0340,2264,A0340：用户签名异常,说明
+9,错误码列表,6054,A0400,包含
+6054,A0400,2265,A0400：用户请求参数错误（二级宏观错误码）,说明
+9,错误码列表,6055,A0401,包含
+6055,A0401,2266,A0401：包含非法恶意跳转链接,说明
+9,错误码列表,6056,A0402,包含
+6056,A0402,2267,A0402：无效的用户输入,说明
+9,错误码列表,6057,A0410,包含
+6057,A0410,2268,A0410：请求必填参数为空,说明
+9,错误码列表,6058,A0411,包含
+6058,A0411,2269,A0411：用户订单号为空,说明
+9,错误码列表,6059,A0412,包含
+6059,A0412,2270,A0412：订购数量为空,说明
+9,错误码列表,6060,A0413,包含
+6060,A0413,2271,A0413：缺少时间戳参数,说明
+9,错误码列表,6061,A0414,包含
+6061,A0414,2272,A0414：非法的时间戳参数,说明
+9,错误码列表,6062,A0420,包含
+6062,A0420,2273,A0420：请求参数值超出允许的范围,说明
+9,错误码列表,6063,A0421,包含
+6063,A0421,2274,A0421：参数格式不匹配,说明
+9,错误码列表,6064,A0422,包含
+6064,A0422,2275,A0422：地址不在服务范围,说明
+9,错误码列表,6065,A0423,包含
+6065,A0423,2276,A0423：时间不在服务范围,说明
+9,错误码列表,6066,A0424,包含
+6066,A0424,2277,A0424：金额超出限制,说明
+9,错误码列表,6067,A0425,包含
+6067,A0425,2278,A0425：数量超出限制,说明
+9,错误码列表,6068,A0426,包含
+6068,A0426,2279,A0426：请求批量处理总个数超出限制,说明
+9,错误码列表,6069,A0427,包含
+6069,A0427,2280,A0427：请求 JSON 解析失败,说明
+9,错误码列表,6070,A0430,包含
+6070,A0430,2281,A0430：用户输入内容非法,说明
+9,错误码列表,6071,A0431,包含
+6071,A0431,2282,A0431：包含违禁敏感词,说明
+9,错误码列表,6072,A0432,包含
+6072,A0432,2283,A0432：图片包含违禁信息,说明
+9,错误码列表,6073,A0433,包含
+6073,A0433,2284,A0433：文件侵犯版权,说明
+9,错误码列表,6074,A0440,包含
+6074,A0440,2285,A0440：用户操作异常,说明
+9,错误码列表,6075,A0441,包含
+6075,A0441,2286,A0441：用户支付超时,说明
+9,错误码列表,6076,A0442,包含
+6076,A0442,2287,A0442：确认订单超时,说明
+9,错误码列表,6077,A0443,包含
+6077,A0443,2288,A0443：订单已关闭,说明
+9,错误码列表,6078,A0500,包含
+6078,A0500,2289,A0500：用户请求服务异常（二级宏观错误码）,说明
+9,错误码列表,6079,A0900,包含
+6079,A0900,2290,A0900：用户隐私未授权（二级宏观错误码）,说明
+9,错误码列表,6080,A0901,包含
+6080,A0901,2291,A0901：用户隐私未签署,说明
+9,错误码列表,6081,A0902,包含
+6081,A0902,2292,A0902：用户摄像头未授权,说明
+9,错误码列表,6082,A0903,包含
+6082,A0903,2293,A0903：用户相机未授权,说明
+9,错误码列表,6083,A0904,包含
+6083,A0904,2294,A0904：用户图片库未授权,说明
+9,错误码列表,6084,A0905,包含
+6084,A0905,2295,A0905：用户文件未授权,说明
+9,错误码列表,6085,A0906,包含
+6085,A0906,2296,A0906：用户位置信息未授权,说明
+9,错误码列表,6086,A0907,包含
+6086,A0907,2297,A0907：用户通讯录未授权,说明
+9,错误码列表,6087,A1000,包含
+6087,A1000,2298,A1000：用户设备异常（二级宏观错误码）,说明
+9,错误码列表,6088,A1001,包含
+6088,A1001,2299,A1001：用户相机异常,说明
+9,错误码列表,6089,A1002,包含
+6089,A1002,2300,A1002：用户麦克风异常,说明
+9,错误码列表,6090,A1003,包含
+6090,A1003,2301,A1003：用户听筒异常,说明
+9,错误码列表,6091,A1004,包含
+6091,A1004,2302,A1004：用户扬声器异常,说明
+9,错误码列表,6092,A1005,包含
+6092,A1005,2303,A1005：用户 GPS 定位异常,说明
+9,错误码列表,6093,B0001,包含
+6093,B0001,2304,B0001：系统执行出错（一级宏观错误码）,说明
+9,错误码列表,6094,B0100,包含
+6094,B0100,2305,B0100：系统执行超时（二级宏观错误码）,说明
+9,错误码列表,6095,B0101,包含
+6095,B0101,2306,B0101：系统订单处理超时,说明
+9,错误码列表,6096,B0200,包含
+6096,B0200,2307,B0200：系统容灾功能被触发（二级宏观错误码）,说明
+9,错误码列表,6097,B0210,包含
+6097,B0210,2308,B0210：系统限流,说明
+9,错误码列表,6098,B0220,包含
+6098,B0220,2309,B0220：系统功能降级,说明
+9,错误码列表,6099,B0300,包含
+6099,B0300,2310,B0300：系统资源异常（二级宏观错误码）,说明
+9,错误码列表,6100,B0310,包含
+6100,B0310,2311,B0310：系统资源耗尽,说明
+9,错误码列表,6101,B0311,包含
+6101,B0311,2312,B0311：系统磁盘空间耗尽,说明
+9,错误码列表,6102,B0312,包含
+6102,B0312,2313,B0312：系统内存耗尽,说明
+9,错误码列表,6103,B0313,包含
+6103,B0313,2314,B0313：文件句柄耗尽,说明
+9,错误码列表,6104,B0314,包含
+6104,B0314,2315,B0314：系统连接池耗尽,说明
+9,错误码列表,6105,B0315,包含
+6105,B0315,2316,B0315：系统线程池耗尽,说明
+9,错误码列表,6106,B0320,包含
+6106,B0320,2317,B0320：系统资源访问异常,说明
+9,错误码列表,6107,B0321,包含
+6107,B0321,2318,B0321：系统读取磁盘文件失败,说明
+9,错误码列表,6108,C0001,包含
+6108,C0001,2319,C0001：调用第三方服务出错（一级宏观错误码）,说明
+9,错误码列表,6109,C0100,包含
+6109,C0100,2320,C0100：中间件服务出错（二级宏观错误码）,说明
+9,错误码列表,6110,C0110,包含
+6110,C0110,2321,C0110：RPC 服务出错,说明
+9,错误码列表,6111,C0111,包含
+6111,C0111,2322,C0111：RPC 服务未找到,说明
+9,错误码列表,6112,C0112,包含
+6112,C0112,2323,C0112：RPC 服务未注册,说明
+9,错误码列表,6113,C0113,包含
+6113,C0113,2324,C0113：接口不存在,说明
+9,错误码列表,6114,C0120,包含
+6114,C0120,2325,C0120：消息服务出错,说明
+9,错误码列表,6115,C0121,包含
+6115,C0121,2326,C0121：消息投递出错,说明
+9,错误码列表,6116,C0122,包含
+6116,C0122,2327,C0122：消息消费出错,说明
+9,错误码列表,6117,C0123,包含
+6117,C0123,2328,C0123：消息订阅出错,说明
+9,错误码列表,6118,C0124,包含
+6118,C0124,2329,C0124：消息分组未查到,说明
+9,错误码列表,6119,C0130,包含
+6119,C0130,2330,C0130：缓存服务出错,说明
+9,错误码列表,6120,C0131,包含
+6120,C0131,2331,C0131：key 长度超过限制,说明
+9,错误码列表,6121,C0132,包含
+6121,C0132,2332,C0132：value 长度超过限制,说明
+9,错误码列表,6122,C0133,包含
+6122,C0133,2333,C0133：存储容量已满,说明
+9,错误码列表,6123,C0134,包含
+6123,C0134,2334,C0134：不支持的数据格式,说明
+9,错误码列表,6124,C0140,包含
+6124,C0140,2335,C0140：配置服务出错,说明
+9,错误码列表,6125,C0150,包含
+6125,C0150,2336,C0150：网络资源服务出错,说明
+9,错误码列表,6126,C0151,包含
+6126,C0151,2337,C0151：VPN 服务出错,说明
+9,错误码列表,6127,C0152,包含
+6127,C0152,2338,C0152：CDN 服务出错,说明
+9,错误码列表,6128,C0153,包含
+6128,C0153,2339,C0153：域名解析服务出错,说明
+9,错误码列表,6129,C0154,包含
+6129,C0154,2340,C0154：网关服务出错,说明
+9,错误码列表,6130,C0200,包含
+6130,C0200,2341,C0200：第三方系统执行超时（二级宏观错误码）,说明
+9,错误码列表,6131,C0210,包含
+6131,C0210,2342,C0210：RPC 执行超时,说明
+9,错误码列表,6132,C0220,包含
+6132,C0220,2343,C0220：消息投递超时,说明
+9,错误码列表,6133,C0230,包含
+6133,C0230,2344,C0230：缓存服务超时,说明
+9,错误码列表,6134,C0240,包含
+6134,C0240,2345,C0240：配置服务超时,说明
+9,错误码列表,6135,C0250,包含
+6135,C0250,2346,C0250：数据库服务超时,说明
+9,错误码列表,6136,C0300,包含
+6136,C0300,2347,C0300：数据库服务出错（二级宏观错误码）,说明
+9,错误码列表,6137,C0311,包含
+6137,C0311,2348,C0311：表不存在,说明
+9,错误码列表,6138,C0312,包含
+6138,C0312,2349,C0312：列不存在,说明
+9,错误码列表,6139,C0321,包含
+6139,C0321,2350,C0321：多表关联中存在多个相同名称的列,说明
+9,错误码列表,6140,C0331,包含
+6140,C0331,2351,C0331：数据库死锁,说明
+9,错误码列表,6141,C0341,包含
+6141,C0341,2352,C0341：主键冲突,说明
+9,错误码列表,6142,C0400,包含
+6142,C0400,2353,C0400：第三方容灾系统被触发（二级宏观错误码）,说明
+9,错误码列表,6143,C0401,包含
+6143,C0401,2354,C0401：第三方系统限流,说明
+9,错误码列表,6144,C0402,包含
+6144,C0402,2355,C0402：第三方功能降级,说明
+9,错误码列表,6145,C0500,包含
+6145,C0500,2356,C0500：通知服务出错（二级宏观错误码）,说明
+9,错误码列表,6146,C0501,包含
+6146,C0501,2357,C0501：短信提醒服务失败,说明
+9,错误码列表,6147,C0502,包含
+6147,C0502,2358,C0502：语音提醒服务失败,说明
+9,错误码列表,6148,C0503,包含
+6148,C0503,2359,C0503：邮件提醒服务失败,说明

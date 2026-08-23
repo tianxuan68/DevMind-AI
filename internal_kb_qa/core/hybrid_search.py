@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import csv
 import os
 import time
 from pathlib import Path
@@ -32,18 +33,6 @@ NEO4J_URI = "bolt://localhost:7687"
 NEO4J_USER = "neo4j"
 NEO4J_PASSWORD = "password123"
 
-# ================================
-# 大模型配置 (预留，当前逻辑未调用)
-# ================================
-from langchain_openai import ChatOpenAI
-
-llm = ChatOpenAI(
-    model="qwen-max",
-    api_key=os.getenv("DASHSCOPE_API_KEY"),
-    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-    temperature=0
-)
-
 METADATA_FIELDS = ("source", "page", "doc_type", "team", "system", "version", "last_updated", "security_level",
                    "parent_id", "parent_content")
 OUTPUT_FIELDS = ["text", *METADATA_FIELDS]
@@ -65,6 +54,55 @@ def _build_filter_expr(filter: dict | None) -> str | None:
         else:
             parts.append(f"{key} == '{value}'")
     return " and ".join(parts) or None
+
+
+# 使用 pathlib 动态获取上级目录
+base_dir = Path(__file__).resolve().parents[2]  # E:\pythonProject\RAG_project
+csv_path = base_dir/ "docs" / "neofj" / "java_manual_edges.csv"
+# =====================================================================
+# 【新增】自动加载数据集到 Neo4j 的函数（支持动态属性，不固定字段）
+# =====================================================================
+def load_csv_to_neo4j(csv_path):
+    print(f"正在加载数据集: {csv_path} ...")
+    if not Path(csv_path).exists():
+        print("文件不存在，跳过。")
+        return
+
+    driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+    with driver.session() as session:
+        # 创建唯一约束
+        session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (n:Node) REQUIRE n.id IS UNIQUE")
+
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                from_id = row.get("from_id")
+                to_id = row.get("to_id")
+                subject = row.get("subject")  # 获取起点名称
+                obj = row.get("object")  # 获取终点名称
+                relation = row.get("relation")
+
+                # 核心修正：将 subject 和 object 显式映射为 name 属性
+                # 其余字段（如果有）可自动作为附加属性
+                src_props = {k: v for k, v in row.items() if k not in ["from_id", "to_id"]}
+                dst_props = {k: v for k, v in row.items() if k not in ["from_id", "to_id"]}
+
+                # 显式确保 name 属性存在
+                src_props["name"] = subject
+                dst_props["name"] = obj
+
+                session.run("""
+                    MERGE (src:Node {id: $from_id})
+                    SET src += $src_props
+                    MERGE (dst:Node {id: $to_id})
+                    SET dst += $dst_props
+                    MERGE (src)-[r:RELATED {relation: $relation}]->(dst)
+                """, from_id=from_id, to_id=to_id, relation=relation,
+                            src_props=src_props, dst_props=dst_props)
+
+        count = session.run("MATCH (n:Node) RETURN count(n) AS count").single()["count"]
+        print(f"加载完成，共 {count} 个节点。")
+    driver.close()
 
 
 class HybridRetriever:
@@ -210,17 +248,27 @@ class HybridRetriever:
 
     # ================= 统一搜索入口（双通道） =================
     def search(self, query: str, k: int | None = None, filter: dict | None = None) -> list[Hit]:
+        # ===== 新增：自动加载数据集判断逻辑 =====
+        if self.neo4j_driver is not None and not self._all_node_names:
+            logger.info("Neo4j 数据为空，正在自动加载数据集...")
+            load_csv_to_neo4j(csv_path)
+            # 加载完毕后重新刷新缓存
+            with self.neo4j_driver.session() as session:
+                result = session.run("MATCH (n:Node) RETURN n.name AS name")
+                self._all_node_names = [record["name"] for record in result if record["name"]]
+        # ==============================================
+
         total_start = time.time()
         k = k or conf.TOP_K
         logger.info(f"启动检索: {query[:80]}, k={k}")
 
         with ThreadPoolExecutor(max_workers=2) as executor:
             # 通道A：直接 Milvus检索
-            future_main = executor.submit(self._retrieve_parents_from_milvus, query, k, filter)
+            # future_main = executor.submit(self._retrieve_parents_from_milvus, query, k, filter)
             # 通道B：图导路检索
             future_supp = executor.submit(self._graph_guided_milvus, query, k, filter)
 
-            main_hits = future_main.result()
+            # main_hits = future_main.result()
             try:
                 supp_hits = future_supp.result()
             except Exception as e:
@@ -232,10 +280,10 @@ class HybridRetriever:
         seen_texts = set()
 
         # 1. 优先放入 Milvus 主导检索的结果
-        for hit in main_hits:
-            if hit.text not in seen_texts:
-                final_hits.append(hit)
-                seen_texts.add(hit.text)
+        # for hit in main_hits:
+        #     if hit.text not in seen_texts:
+        #         final_hits.append(hit)
+        #         seen_texts.add(hit.text)
 
         # 2. 再放入图导路补充的结果
         for hit in supp_hits:
@@ -243,8 +291,8 @@ class HybridRetriever:
                 final_hits.append(hit)
                 seen_texts.add(hit.text)
 
-        logger.info(
-            f"合并完成：主检索 {len(main_hits)} 条，补充 {len(supp_hits)} 条，最终返回 {len(final_hits)} 条，总耗时: {time.time() - total_start:.3f}s")
+        # logger.info(
+        #     f"合并完成：主检索 {len(main_hits)} 条，补充 {len(supp_hits)} 条，最终返回 {len(final_hits)} 条，总耗时: {time.time() - total_start:.3f}s")
         return final_hits
 
     @classmethod
