@@ -182,25 +182,68 @@ class HybridRetriever:
 
     # ================= 通用 Milvus 检索方法 =================
     def _retrieve_parents_from_milvus(self, query_text, k, filter) -> list[Hit]:
-        query_embeddings = self.embedding_function([query_text])
-        dense_vec = query_embeddings["dense"][0]
+        # 使用 BGE-M3 嵌入函数生成查询的嵌入
+        query_embeddings = self.embedding_function([query])
+        # 获取查询的稠密向量
+        dense_query_vector = query_embeddings["dense"][0]
+        # print(f'dense_query_vector--》{dense_query_vector.shape}')
+        # 初始化查询的稀疏向量字典
+        sparse_query_vector = {}
+        # ====================
+        # 获取查询稀疏向量的第 0 行数据
+        # row = query_embeddings["sparse"][0]
+        # # 获取稀疏向量的非零值索引
+        # indices = row.indices
+        # # 获取稀疏向量的非零值
+        # values = row.data
+        # ====================
+        try:
+            # 新版本 milvus-model 使用 coo_array 格式
+            row = query_embeddings["sparse"][0]
+            if hasattr(row, 'col'):  # coo_array 格式
+                indices = row.col
+                values = row.data
+            else:  # csr_matrix 格式
+                indices = row.indices
+                values = row.data
+        except Exception as e:
+            # 兼容旧版本 milvus-model
+            row = query_embeddings["sparse"].getrow(0)
+            indices = row.indices
+            values = row.data
 
-        # 修复稀疏向量兼容性：强制转换为 csr_matrix 并提取第一行
-        sparse_mat = query_embeddings["sparse"]
-        sparse_vec = sp.csr_matrix(sparse_mat).getrow(0)
+        # 将索引和值配对，填充稀疏向量字典
+        for idx, value in zip(indices, values):
+            sparse_query_vector[idx] = value
+        # print(f'sparse_query_vector-->{sparse_query_vector}')
+        # 初始化过滤表达式，默认不过滤
+        filter_expr = _build_filter_expr(filter)        # print(f'filter_expr--》{filter_expr}')
+        # 创建稠密向量搜索请求
+        dense_request = AnnSearchRequest(
+            data=[dense_query_vector],
+            anns_field="dense_vector",
+            param={"metric_type": "IP", "params": {"nprobe": 10}},
+            limit=k,
+            expr=filter_expr
+        )
+        # 创建稀疏向量搜索请求
+        sparse_request = AnnSearchRequest(
+            data=[sparse_query_vector],
+            anns_field="sparse_vector",
+            param={"metric_type": "IP", "params": {}},
+            limit=k,
+            expr=filter_expr
+        )
 
-        reqs = [
-            AnnSearchRequest(dense_vec, "dense", {"metric_type": "IP"}, limit=k),
-            AnnSearchRequest(sparse_vec, "sparse", {"metric_type": "IP"}, limit=k),
-        ]
-        # 修复变量名：self.client -> self.milvus_client
+        # 创建加权排序器，稀疏向量权重 0.3，稠密向量权重 0.7
+        ranker = WeightedRanker(0.7, 0.3)
+        # 执行混合搜索，返回 Top-K 结果
         res = self.milvus_client.hybrid_search(
             collection_name=conf.MILVUS_COLLECTION_NAME,
-            reqs=reqs,
-            ranker=WeightedRanker(_DENSE_WEIGHT, _SPARSE_WEIGHT),
-            filter=_build_filter_expr(filter),
-            output_fields=OUTPUT_FIELDS,
+            reqs=[dense_request, sparse_request],
+            ranker=ranker,
             limit=k,
+            output_fields=["text", "parent_id", "parent_content", "source", "timestamp"]
         )[0]
 
         hits = []
@@ -264,11 +307,11 @@ class HybridRetriever:
 
         with ThreadPoolExecutor(max_workers=2) as executor:
             # 通道A：直接 Milvus检索
-            # future_main = executor.submit(self._retrieve_parents_from_milvus, query, k, filter)
+            future_main = executor.submit(self._retrieve_parents_from_milvus, query, k, filter)
             # 通道B：图导路检索
             future_supp = executor.submit(self._graph_guided_milvus, query, k, filter)
 
-            # main_hits = future_main.result()
+            main_hits = future_main.result()
             try:
                 supp_hits = future_supp.result()
             except Exception as e:
@@ -280,10 +323,10 @@ class HybridRetriever:
         seen_texts = set()
 
         # 1. 优先放入 Milvus 主导检索的结果
-        # for hit in main_hits:
-        #     if hit.text not in seen_texts:
-        #         final_hits.append(hit)
-        #         seen_texts.add(hit.text)
+        for hit in main_hits:
+            if hit.text not in seen_texts:
+                final_hits.append(hit)
+                seen_texts.add(hit.text)
 
         # 2. 再放入图导路补充的结果
         for hit in supp_hits:
@@ -291,8 +334,8 @@ class HybridRetriever:
                 final_hits.append(hit)
                 seen_texts.add(hit.text)
 
-        # logger.info(
-        #     f"合并完成：主检索 {len(main_hits)} 条，补充 {len(supp_hits)} 条，最终返回 {len(final_hits)} 条，总耗时: {time.time() - total_start:.3f}s")
+        logger.info(
+            f"合并完成：主检索 {len(main_hits)} 条，补充 {len(supp_hits)} 条，最终返回 {len(final_hits)} 条，总耗时: {time.time() - total_start:.3f}s")
         return final_hits
 
     @classmethod
