@@ -11,9 +11,9 @@ from typing import Any, List, Sequence, Union
 
 from .code_splitter import CodeSplitter, _CODE_EXTENSIONS, _language_from_source
 from .markdown_splitter import MarkdownHeaderSplitter
-from .models import Chunk, Document, document_from_langchain
+from ..core.models import Chunk, Document, document_from_langchain
 from .recursive_splitter import RecursiveSplitter
-from .vector_store import VectorStore
+from ..core.vector_store import VectorStore
 
 __all__ = [
     "split",
@@ -34,7 +34,7 @@ _DEFAULT_CHUNK_OVERLAP = 150
 
 def _load_retrieval_config() -> tuple[int, int]:
     try:
-        from .vector_store import _load_config
+        from ..core.vector_store import _load_config
 
         config = _load_config()
         return config.CHUNK_SIZE, config.CHUNK_OVERLAP
