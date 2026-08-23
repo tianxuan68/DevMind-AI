@@ -1,203 +1,142 @@
 """T4 BM25 + Dense 混合检索（RRF 融合）。
 
-对外接口：
+对外接口（契约，见 docs/企业内部技术知识库智能问答系统-任务分工.md T4 节）：
     search(query: str, top_k: int, filter: dict = None) -> list[Hit]
-"""
-# TODO(T4 算法组): Milvus hybrid search；filter 必须注入 team/system/security_level。
 
-# -*- coding: utf-8 -*-
+说明：
+    - 本模块只做「混合召回」（BGE-M3 稠密 + 稀疏，Milvus hybrid_search + 加权融合）。
+    - 精排由 T7 reranker.py 的 rerank() 负责，本模块不重排。
+    - filter 用于强制注入权限过滤（team / system / security_level），不可绕过。
 """
-混合检索模块（Hybrid Retrieval with Rerank）
-功能：基于 BGE-M3 的稠密+稀疏混合检索 + BGE-Reranker 重排序
-"""
+from __future__ import annotations
 
-import os
 import time
-import torch.cuda
-from langchain_core.documents import Document
-from sentence_transformers import CrossEncoder
-from pymilvus import MilvusClient, AnnSearchRequest, WeightedRanker
+from pathlib import Path
+
+import torch
 from milvus_model.hybrid import BGEM3EmbeddingFunction
+from pymilvus import AnnSearchRequest, MilvusClient, WeightedRanker
 
 from base.config import Config
 from base.logger import logger
+from internal_kb_qa.core.hit import Hit
 
 conf = Config()
 
+# 命中文档需要带回的元数据字段（与 T3 入库时写入 collection 的字段一致）
+METADATA_FIELDS = (
+    "source", "page", "doc_type",
+    "team", "system", "version", "last_updated", "security_level",
+)
+OUTPUT_FIELDS = ["text", *METADATA_FIELDS]
+
+# 稠密 / 稀疏融合权重（Milvus v2.3 只支持 WeightedRanker；v2.4+ 可换 RRFRanker 实现真 RRF）
+_DENSE_WEIGHT = 0.5
+_SPARSE_WEIGHT = 0.5
+
+
+def _models_dir() -> Path:
+    """模型目录：internal_kb_qa/models/。"""
+    return Path(__file__).resolve().parents[1] / "models"
+
+
+def _build_filter_expr(filter: dict | None) -> str | None:
+    """把权限/元数据过滤 dict 转成 Milvus filter 表达式。
+
+    例：{"team": "backend", "security_level": "team"} -> "team == 'backend' and security_level == 'team'"
+    """
+    if not filter:
+        return None
+    parts = []
+    for key in ("team", "system", "security_level", "doc_type", "source"):
+        value = filter.get(key)
+        if value is None or value == "":
+            continue
+        if isinstance(value, (list, tuple, set)):
+            # 多值过滤：in ['a', 'b']
+            quoted = ", ".join(f"'{v}'" for v in value)
+            parts.append(f"{key} in [{quoted}]")
+        else:
+            parts.append(f"{key} == '{value}'")
+    return " and ".join(parts) or None
+
 
 class HybridRetriever:
-    """混合检索器"""
+    """BGE-M3 稠密 + 稀疏混合检索（进程内单例，避免重复加载模型）。"""
 
-    def __init__(self):
-        # 获取当前文件所在目录的绝对路径
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        # 获取core文件所在的目录的绝对路径
-        self.rag_qa_path = os.path.dirname(current_dir)
+    _instance: HybridRetriever | None = None
 
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        logger.info(f"设备: {self.device}")
+    def __init__(self) -> None:
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        logger.info("T4 混合检索设备: %s", self.device)
 
-        # 初始化 BGE-Reranker 模型，用于重排序检索结果
-        reranker_path = os.path.join(self.rag_qa_path, 'models', 'bge-reranker-v2-m3')
-        logger.info(f"加载 Reranker: {reranker_path}")
-        start = time.time()
-        self.reranker = CrossEncoder(reranker_path, device=self.device)
-        logger.info(f"Reranker 加载完成，耗时: {time.time() - start:.2f}s")
-
-        # 初始化 BGE-M3 嵌入函数
-        m3_path = os.path.join(self.rag_qa_path, 'models', 'bge-m3')
-        logger.info(f"加载 BGE-M3: {m3_path}")
+        m3_path = _models_dir() / "bge-m3"
+        logger.info("加载 BGE-M3: %s", m3_path)
         start = time.time()
         self.embedding_function = BGEM3EmbeddingFunction(
-            model_name_or_path=m3_path,
-            use_fp16=(self.device == 'cuda'),
-            device=self.device
+            model_name_or_path=str(m3_path),
+            use_fp16=(self.device == "cuda"),
+            device=self.device,
         )
-        logger.info(f"BGE-M3 加载完成，耗时: {time.time() - start:.2f}s")
+        logger.info("BGE-M3 加载完成，耗时: %.2fs", time.time() - start)
 
-        # 设置 Milvus 主机地址
-        host = conf.MILVUS_HOST
-        # 设置 Milvus 端口号
-        port = conf.MILVUS_PORT
-        # 设置 Milvus 数据库名称
-        database = conf.MILVUS_DATABASE_NAME
-
-        # 初始化 Milvus 客户端，连接到指定主机和数据库
-        logger.info(f"连接 Milvus: http://{host}:{port}/{database}")
-        self.client = MilvusClient(uri=f"http://{host}:{port}", db_name=database)
+        uri = f"http://{conf.MILVUS_HOST}:{conf.MILVUS_PORT}"
+        logger.info("连接 Milvus: %s/%s", uri, conf.MILVUS_DATABASE_NAME)
+        self.client = MilvusClient(uri=uri, db_name=conf.MILVUS_DATABASE_NAME)
         logger.info("Milvus 连接成功")
 
-    def doc_from_hit(self, hit):
-        # 创建并返回 Document 对象，填充内容和元数据
-        return Document(
-            page_content=hit.get("text"),
-            metadata={
-                "parent_id": hit.get("parent_id"),
-                "parent_content": hit.get("parent_content"),
-                "source": hit.get("source"),
-                "timestamp": hit.get("timestamp")
-            }
-        )
+    @classmethod
+    def get_instance(cls) -> "HybridRetriever":
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
 
-    def get_unique_parent_docs(self, sub_chunks):
-        # 初始化集合，用于存储已处理的父块内容（去重）
-        parent_contents = set()
-        # 初始化列表，用于存储唯一父文档
-        unique_docs = []
-        # 遍历所有子块
-        for chunk in sub_chunks:
-            # 获取子块的父块内容，默认为子块内容
-            parent_content = chunk.metadata.get("parent_content", chunk.page_content)
-            # 检查父块内容是否非空且未重复
-            if parent_content and parent_content not in parent_contents:
-                # 创建新的 Document 对象，包含父块内容和元数据
-                unique_docs.append(Document(page_content=parent_content, metadata=chunk.metadata))
-                # 将父块内容添加到去重集合
-                parent_contents.add(parent_content)
-            # 返回去重后的父文档列表
-        return unique_docs
-
-    def search(self, query, k=conf.TOP_K, source_filter=None):
+    def search(self, query: str, k: int | None = None, filter: dict | None = None) -> list[Hit]:
+        """执行混合召回，返回 Hit 列表（含 RRF/加权融合得分）。"""
+        k = k or conf.TOP_K
         total_start = time.time()
-        logger.info(f"查询: {query[:80]}{'...' if len(query) > 80 else ''}")
-        logger.info(f"参数: k={k}, source_filter={source_filter}")
+        logger.info("T4 检索: %s, k=%d, filter=%s", query[:80], k, filter)
 
-        # 使用 BGE-M3 嵌入函数生成查询的嵌入
+        # 1) 生成稠密 + 稀疏查询向量
         embed_start = time.time()
         query_embeddings = self.embedding_function([query])
-        # 获取查询的稠密向量
-        dense_query_vector = query_embeddings["dense"][0]
-        logger.info(f"向量生成耗时: {time.time() - embed_start:.3f}s")
+        dense_vec = query_embeddings["dense"][0]
+        sparse_vec = query_embeddings["sparse"].getrow(0)
+        logger.info("向量生成耗时: %.3fs", time.time() - embed_start)
 
-        # 初始化查询的稀疏向量字典
-        sparse_query_vector = {}
-        try:
-            # 新版本 milvus-model 使用 coo_array 格式
-            row = query_embeddings["sparse"][0]
-            if hasattr(row, 'col'):  # coo_array 格式
-                indices = row.col
-                values = row.data
-            else:  # csr_matrix 格式
-                indices = row.indices
-                values = row.data
-        except Exception as e:
-            # 兼容旧版本 milvus-model
-            row = query_embeddings["sparse"].getrow(0)
-            indices = row.indices
-            values = row.data
-
-        # 将索引和值配对，填充稀疏向量字典
-        for idx, value in zip(indices, values):
-            sparse_query_vector[idx] = value
-
-        # 初始化过滤表达式，默认不过滤
-        filter_expr = f"source == '{source_filter}'" if source_filter else ""
-
-        # 创建稠密向量搜索请求
-        dense_request = AnnSearchRequest(
-            data=[dense_query_vector],
-            anns_field="dense_vector",
-            param={"metric_type": "IP", "params": {"nprobe": 10}},
-            limit=k,
-            expr=filter_expr
-        )
-        # 创建稀疏向量搜索请求
-        sparse_request = AnnSearchRequest(
-            data=[sparse_query_vector],
-            anns_field="sparse_vector",
-            param={"metric_type": "IP", "params": {}},
-            limit=k,
-            expr=filter_expr
-        )
-
-        # 创建加权排序器，稀疏向量权重 0.3，稠密向量权重 0.7
-        ranker = WeightedRanker(0.7, 0.3)
-
-        # 执行混合搜索，返回 Top-K 结果
-        search_start = time.time()
-        results = self.client.hybrid_search(
+        # 2) 稠密 + 稀疏双路召回，加权融合
+        reqs = [
+            AnnSearchRequest(dense_vec, "dense", {"metric_type": "IP"}, limit=k),
+            AnnSearchRequest(sparse_vec, "sparse", {"metric_type": "IP"}, limit=k),
+        ]
+        res = self.client.hybrid_search(
             collection_name=conf.MILVUS_COLLECTION_NAME,
-            reqs=[dense_request, sparse_request],
-            ranker=ranker,
+            reqs=reqs,
+            ranker=WeightedRanker(_DENSE_WEIGHT, _SPARSE_WEIGHT),
+            filter=_build_filter_expr(filter),
+            output_fields=OUTPUT_FIELDS,
             limit=k,
-            output_fields=["text", "parent_id", "parent_content", "source", "timestamp"]
-        )[0]
-        logger.info(f"检索耗时: {time.time() - search_start:.3f}s, 返回 {len(results)} 条")
+        )
 
-        # 将上述搜索到的结果进行Document对象封装，便于查询使用
-        sub_chunks = [self.doc_from_hit(hit["entity"]) for hit in results]
+        # 3) 组装成契约要求的 list[Hit]
+        hits: list[Hit] = []
+        for hit in res[0]:
+            entity = hit.get("entity", {}) or {}
+            metadata = {f: entity[f] for f in METADATA_FIELDS if entity.get(f) not in (None, "")}
+            hits.append(Hit(
+                text=entity.get("text", ""),
+                score=float(hit.get("distance", 0.0)),
+                metadata=metadata,
+            ))
 
-        # 从子块中提取去重的父文档
-        parent_docs = self.get_unique_parent_docs(sub_chunks)
-        logger.info(f"去重后父文档数: {len(parent_docs)}")
-
-        # 如果只有1个文档或者没有，直接返回跳过重排序
-        if len(parent_docs) < 2:
-            logger.info("父文档少于2个，跳过重排序")
-            return parent_docs[:conf.CANDIDATE_M]
-
-        # 如果有父文档，进行重排序
-        if parent_docs:
-            # 创建查询与文档内容的配对列表
-            pairs = [[query, doc.page_content] for doc in parent_docs]
-            # 使用 BGE-Reranker 计算每个配对的得分
-            rerank_start = time.time()
-            scores = self.reranker.predict(pairs)
-            logger.info(f"重排序耗时: {time.time() - rerank_start:.3f}s")
-            # 根据得分从高到低排序文档
-            ranked_parent_docs = [doc for _, doc in sorted(zip(scores, parent_docs), reverse=True)]
-        else:
-            ranked_parent_docs = []
-
-        # 返回前 m 个重排序后的文档
-        final_docs = ranked_parent_docs[:conf.RERANK_TOP_K]
-        logger.info(f"最终返回 {len(final_docs)} 个文档, 总耗时: {time.time() - total_start:.3f}s")
-        return final_docs
+        logger.info("T4 召回完成: %d 条, 总耗时 %.3fs", len(hits), time.time() - total_start)
+        return hits
 
 
-if __name__ == "__main__":
-    retriever = HybridRetriever()
-    query = "AI学科学费是多少？"
-    results = retriever.search(query, source_filter='ai')
-    print(f'results-->{results}')
-    print(f'results-->{len(results)}')
+# ---------------------------------------------------------------------------
+# 对外契约：模块级函数（T7 rag_generator 直接 import 这个）
+# ---------------------------------------------------------------------------
+
+def search(query: str, top_k: int | None = None, filter: dict | None = None) -> list[Hit]:
+    """T4 混合检索契约入口。"""
+    return HybridRetriever.get_instance().search(query, k=top_k, filter=filter)
