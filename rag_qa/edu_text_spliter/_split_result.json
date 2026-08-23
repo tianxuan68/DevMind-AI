@@ -8,14 +8,14 @@
       "last_updated": "2026-08-20T10:00:00",
       "security_level": "team",
       "page": 1,
-      "source": "user-service-runbook.md",
+      "source": "runbook.md",
       "doc_type": "runbook",
       "chunk_type": "text",
       "header_1": "用户服务部署手册"
     }
   },
   {
-    "text": "## 环境要求\n服务依赖 JDK 17 与 MySQL 8.0，部署前请确认节点可用内存大于 4GB。",
+    "text": "## 环境要求\n服务依赖 JDK 17 与 MySQL 8.0。",
     "metadata": {
       "team": "backend",
       "system": "user-service",
@@ -23,7 +23,7 @@
       "last_updated": "2026-08-20T10:00:00",
       "security_level": "team",
       "page": 1,
-      "source": "user-service-runbook.md",
+      "source": "runbook.md",
       "doc_type": "runbook",
       "chunk_type": "text",
       "header_1": "用户服务部署手册",
@@ -39,7 +39,7 @@
       "last_updated": "2026-08-20T10:00:00",
       "security_level": "team",
       "page": 1,
-      "source": "user-service-runbook.md",
+      "source": "runbook.md",
       "doc_type": "runbook",
       "chunk_type": "text",
       "header_1": "用户服务部署手册",
@@ -47,7 +47,7 @@
     }
   },
   {
-    "text": "```bash\njava -jar user-service.jar --spring.profiles.active=prod\n```",
+    "text": "```bash\njava -jar user-service.jar\n```",
     "metadata": {
       "team": "backend",
       "system": "user-service",
@@ -55,7 +55,7 @@
       "last_updated": "2026-08-20T10:00:00",
       "security_level": "team",
       "page": 1,
-      "source": "user-service-runbook.md",
+      "source": "runbook.md",
       "doc_type": "runbook",
       "chunk_type": "code",
       "language": "bash",
@@ -64,7 +64,7 @@
     }
   },
   {
-    "text": "## 回滚策略\n若新版本出现 5xx 异常，请立即切换至上一版本镜像并重启 Pod。",
+    "text": "## 回滚策略\n若出现 5xx 异常，请立即回滚。",
     "metadata": {
       "team": "backend",
       "system": "user-service",
@@ -72,7 +72,7 @@
       "last_updated": "2026-08-20T10:00:00",
       "security_level": "team",
       "page": 1,
-      "source": "user-service-runbook.md",
+      "source": "runbook.md",
       "doc_type": "runbook",
       "chunk_type": "text",
       "header_1": "用户服务部署手册",
@@ -80,7 +80,7 @@
     }
   },
   {
-    "text": "class UserService:\n    def get_user(self, user_id: int):\n        return self.repo.find_by_id(user_id)\n\n    def create_user(self, payload: dict):\n        return self.repo.insert(payload)",
+    "text": "class A:\n    def foo(self): pass",
     "metadata": {
       "team": "backend",
       "system": "user-service",
@@ -88,7 +88,7 @@
       "last_updated": "2026-08-20T10:00:00",
       "security_level": "team",
       "page": 1,
-      "source": "user_service.py",
+      "source": "a.py",
       "doc_type": "api",
       "language": "python",
       "chunk_type": "code"

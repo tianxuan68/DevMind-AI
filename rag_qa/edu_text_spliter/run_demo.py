@@ -1,7 +1,8 @@
-"""T3 本地调试入口：切分演示 + 可选 Milvus 入库。
+"""T3 本地调试入口（兼容层，调用 internal_kb_qa 实现）。
 
-用法（在项目根目录 D:\\DevMindai 下）：
-    .venv\\Scripts\\python.exe -m rag_qa.edu_text_spliter.run_demo
+用法：
+    python -m rag_qa.edu_text_spliter.run_demo
+    python -m internal_kb_qa.scripts.ingest_documents <path> --dry-run
 """
 import logging
 import os
@@ -11,7 +12,9 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from rag_qa.edu_text_spliter import Document, insert, save_chunks_json, split
+from internal_kb_qa.core.models import Document
+from internal_kb_qa.core.vector_store import insert
+from internal_kb_qa.text_splitters import save_chunks_json, split
 
 
 def main() -> None:
@@ -49,19 +52,11 @@ java -jar user-service.jar --spring.profiles.active=prod
     docs = [
         Document(
             page_content=runbook_md,
-            metadata={
-                **base_meta,
-                "source": "user-service-runbook.md",
-                "doc_type": "runbook",
-            },
+            metadata={**base_meta, "source": "user-service-runbook.md", "doc_type": "runbook"},
         ),
         Document(
             page_content=python_code,
-            metadata={
-                **base_meta,
-                "source": "user_service.py",
-                "doc_type": "api",
-            },
+            metadata={**base_meta, "source": "user_service.py", "doc_type": "api"},
         ),
     ]
 
@@ -70,15 +65,14 @@ java -jar user-service.jar --spring.profiles.active=prod
     save_chunks_json(chunks, out_path)
     print(f"切分完成：{len(chunks)} 个 Chunk -> {out_path}")
 
-    for index, chunk in enumerate(chunks, 1):
-        preview = chunk.text.replace("\n", " ")[:80]
-        print(f"  [{index}] type={chunk.metadata.get('chunk_type')} preview={preview}...")
-
-    try:
-        count = insert(chunks)
-        print(f"Milvus 入库成功：{count} 条")
-    except Exception as exc:
-        print(f"Milvus 入库跳过（需启动 Milvus + BGE-M3 模型）：{exc}")
+    if os.environ.get("SKIP_INSERT", "1") != "1":
+        try:
+            count = insert(chunks)
+            print(f"Milvus 入库成功：{count} 条")
+        except Exception as exc:
+            print(f"Milvus 入库失败：{exc}")
+    else:
+        print("跳过入库（设置 SKIP_INSERT=0 可启用）")
 
 
 if __name__ == "__main__":
