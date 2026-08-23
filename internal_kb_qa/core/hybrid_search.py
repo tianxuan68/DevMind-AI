@@ -353,8 +353,8 @@ def search(query: str, top_k: int | None = None, filter: dict | None = None) -> 
 if __name__ == "__main__":
     print("正在初始化检索器（加载模型、连接 Milvus 和 Neo4j）...")
     retriever = HybridRetriever.get_instance()
-    query = "命名风格是什么？"
-    filter_dict = {"source": "java_manual"}
+    query = "ai学费？"
+    filter_dict = {"source": "ai"}
     print(f"\n开始检索: '{query}'")
     results = retriever.search(query, k=5, filter=filter_dict)
     print(f"\n检索完成，共返回 {len(results)} 条父块内容:")
