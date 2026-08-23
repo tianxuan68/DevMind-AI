@@ -4,14 +4,24 @@ from __future__ import annotations
 
 import logging
 import re
+from base64 import b64decode
 from pathlib import Path
+from typing import Protocol
+from urllib.parse import unquote, urlparse
+from urllib.request import urlopen
 
 from langchain_core.documents import Document
 
 from base.logger import logger
+from internal_kb_qa.ocr import OCRUnavailableError, QwenOCREngine
 
 
 _FILE_HANDLER_MARKER = "_document_loader_file_handler"
+
+
+class ImageOCREngine(Protocol):
+    def recognize(self, image_bytes: bytes):
+        ...
 
 
 def get_logger() -> logging.Logger:
@@ -58,23 +68,85 @@ def make_document(
     file_path: str | Path,
     page: int,
     doc_type: str | None = None,
+    extra_metadata: dict | None = None,
 ) -> Document | None:
     """Create a normalized Document, returning None for content without text."""
     normalized = normalize_text(text)
     if not normalized:
         return None
-    return Document(
-        page_content=normalized,
-        metadata={
-            "source": source_name(file_path),
-            "page": page,
-            "doc_type": doc_type or document_type_for_path(file_path),
-        },
-    )
+    metadata = {
+        "source": source_name(file_path),
+        "page": page,
+        "doc_type": doc_type or document_type_for_path(file_path),
+    }
+    if extra_metadata:
+        metadata.update(extra_metadata)
+    return Document(page_content=normalized, metadata=metadata)
 
 
 def read_utf8(file_path: str | Path) -> str:
     return Path(file_path).read_text(encoding="utf-8-sig")
+
+
+def read_image_reference(reference: str, base_dir: str | Path) -> bytes | None:
+    """Read a local, data-URI, or HTTP image referenced by a document."""
+    reference = unquote(reference.strip().strip("<>"))
+    if not reference:
+        return None
+    if reference.startswith("data:"):
+        header, payload = reference.split(",", 1)
+        if ";base64" in header:
+            return b64decode(payload)
+        return unquote(payload).encode("utf-8")
+
+    parsed = urlparse(reference)
+    if parsed.scheme in {"http", "https"}:
+        with urlopen(reference, timeout=10) as response:
+            return response.read()
+    if parsed.scheme == "file":
+        reference = parsed.path
+
+    image_path = Path(reference)
+    if not image_path.is_absolute():
+        image_path = Path(base_dir) / image_path
+    if not image_path.is_file():
+        return None
+    return image_path.read_bytes()
+
+
+def recognize_image(
+    image_bytes: bytes,
+    ocr_engine: ImageOCREngine,
+    source: str | Path,
+    context: str,
+    log: logging.Logger,
+) -> str | None:
+    """Run OCR for one embedded image and isolate failures to that image."""
+    try:
+        result = ocr_engine.recognize(image_bytes)
+        text = normalize_text(result.text)
+        if text:
+            log.info(
+                "Image OCR completed: source=%s context=%s chars=%s",
+                Path(source).name,
+                context,
+                len(text),
+            )
+        return text or None
+    except OCRUnavailableError as exc:
+        log.warning(
+            "Image OCR unavailable: source=%s context=%s reason=%s",
+            Path(source).name,
+            context,
+            exc,
+        )
+    except Exception:
+        log.exception(
+            "Image OCR failed: source=%s context=%s",
+            Path(source).name,
+            context,
+        )
+    return None
 
 
 def markdown_table(rows: list[list[str]]) -> str:

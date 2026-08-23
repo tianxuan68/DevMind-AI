@@ -32,6 +32,7 @@ class Config:
         self.LLM_MODEL = self.config.get("llm", "model", fallback="qwen-plus")
         self.DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY") or self.config.get("llm", "dashscope_api_key", fallback="")
         self.DASHSCOPE_BASE_URL = self.config.get("llm", "dashscope_base_url", fallback="https://dashscope.aliyuncs.com/compatible-mode/v1")
+        self.OCR_MODEL = self.config.get("llm", "ocr_model", fallback="qwen-vl-plus")
 
         self.BGE_MODEL = self.config.get("embedding", "model_name", fallback="bge-m3")
         self.BGE_DIM = self.config.getint("embedding", "dim", fallback=1024)
