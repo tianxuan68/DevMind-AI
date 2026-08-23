@@ -279,3 +279,24 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+
+# ------------------------------------------------------------------
+# IDE / 编辑器配置文件（各人本地环境，不提交）
+# ------------------------------------------------------------------
+.idea/
+.vscode/
+*.iml
+*.code-workspace
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.factorypath
+*.launch
+
+# 系统垃圾文件
+.DS_Store
+Thumbs.db
+desktop.ini
