@@ -56,6 +56,14 @@ def _get_reranker_model_path() -> str:
             f"精排模型未找到: {model_dir}\n"
             f"请从参考项目复制 bge-reranker-v2-m3 到 internal_kb_qa/models/"
         )
+    required_files = ("config.json", "model.safetensors", "tokenizer.json", "sentencepiece.bpe.model")
+    missing = [name for name in required_files if not (model_dir / name).exists()]
+    if missing:
+        raise FileNotFoundError(
+            f"精排模型文件不完整: {model_dir}\n"
+            f"缺少文件: {missing}\n"
+            f"请运行: python -m internal_kb_qa.scripts.download_models bge-reranker-v2-m3"
+        )
     return str(model_dir)
 
 

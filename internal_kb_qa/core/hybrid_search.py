@@ -21,6 +21,7 @@ from milvus_model.hybrid import BGEM3EmbeddingFunction
 
 from base.config import Config
 from base.logger import logger
+from internal_kb_qa.core.hit import Hit
 
 conf = Config()
 
@@ -193,6 +194,40 @@ class HybridRetriever:
         final_docs = ranked_parent_docs[:conf.RERANK_TOP_K]
         logger.info(f"最终返回 {len(final_docs)} 个文档, 总耗时: {time.time() - total_start:.3f}s")
         return final_docs
+
+
+# T4 对外契约：模块级 search 函数
+_retriever: HybridRetriever | None = None
+
+
+def search(query: str, top_k: int, filter: dict | None = None) -> list[Hit]:
+    """BM25 + Dense 混合检索（T4 对外接口）。
+
+    Args:
+        query: 用户问题。
+        top_k: 召回条数。
+        filter: 元数据过滤条件，支持 team / system / security_level。
+
+    Returns:
+        list[Hit]: 命中的文档片段。
+    """
+    global _retriever
+    if _retriever is None:
+        _retriever = HybridRetriever()
+
+    # 当前 HybridRetriever 仅支持 source 过滤，先做兼容映射
+    filter = filter or {}
+    source_filter = filter.get("source") or filter.get("system") or filter.get("team")
+
+    docs = _retriever.search(query, k=top_k, source_filter=source_filter)
+    return [
+        Hit(
+            text=doc.page_content,
+            score=float(doc.metadata.get("score", 0.5)),
+            metadata=doc.metadata,
+        )
+        for doc in docs
+    ]
 
 
 if __name__ == "__main__":

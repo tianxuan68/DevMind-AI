@@ -1,0 +1,291 @@
+/* DevMind-AI 前端样式：保持简单 */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Microsoft YaHei", Arial, sans-serif;
+  background: #f5f6f8;
+  color: #222;
+}
+
+/* 顶部导航 */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 12px 24px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.header h1 {
+  font-size: 20px;
+  margin: 0;
+  color: #1f6feb;
+}
+
+.header nav {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.header nav button,
+.header .user-box button,
+.toolbar button,
+.pagination button,
+.auth-tabs button,
+.form button,
+.modal button,
+.chat-input button {
+  padding: 7px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.header nav button.active {
+  background: #1f6feb;
+  border-color: #1f6feb;
+  color: #fff;
+}
+
+.user-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 主区域 */
+main {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.toolbar input,
+.toolbar select {
+  padding: 7px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+}
+
+/* 表格 */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border-bottom: 1px solid #eef0f2;
+  padding: 9px 8px;
+  text-align: left;
+  font-size: 14px;
+}
+
+th {
+  background: #f9fafb;
+}
+
+.message {
+  color: #d33;
+  margin: 8px 0;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+/* 弹窗 */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  width: min(560px, 90vw);
+}
+
+.modal .answer {
+  background: #f6f8fa;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+/* 登录页 */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 24px;
+  width: min(420px, 92vw);
+  border: 1px solid #e5e7eb;
+}
+
+.auth-card h2 {
+  text-align: center;
+  color: #1f6feb;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.auth-tabs button.active {
+  background: #1f6feb;
+  color: #fff;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form input {
+  padding: 9px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+}
+
+.form .row {
+  display: flex;
+  gap: 8px;
+}
+
+.form .row input {
+  flex: 1;
+}
+
+.tip {
+  color: #1f6feb;
+  font-size: 13px;
+}
+
+/* 问答窗口 */
+.chat-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.chat-window {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-empty {
+  color: #999;
+  text-align: center;
+  margin-top: 40px;
+}
+
+.chat-row {
+  display: flex;
+}
+
+.chat-row.user {
+  justify-content: flex-end;
+}
+
+.chat-row.assistant {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.bubble {
+  max-width: 75%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.chat-row.user .bubble {
+  background: #1f6feb;
+  color: #fff;
+}
+
+.chat-row.assistant .bubble {
+  background: #f0f2f5;
+}
+
+.source-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px;
+  margin-top: 6px;
+  font-size: 13px;
+  max-width: 85%;
+}
+
+.source-line {
+  display: flex;
+  gap: 16px;
+  margin: 2px 0;
+}
+
+.badge {
+  background: #e8f1ff;
+  color: #1f6feb;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 12px;
+}
+
+.chat-input {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 9px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+}
