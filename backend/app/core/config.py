@@ -49,5 +49,8 @@ class Settings:
         self.QUESTION_EMPTY_TTL = int(os.getenv("QUESTION_EMPTY_TTL", "60"))
         self.CACHE_LOCK_TIMEOUT = int(os.getenv("CACHE_LOCK_TIMEOUT", "5"))
 
+        # 文档上传目录
+        self.UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", str(PROJECT_ROOT / "data" / "uploads")))
+
 
 settings = Settings()

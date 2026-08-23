@@ -53,3 +53,19 @@ class FAQQuery(BaseModel):
 
 class FAQSearchRequest(BaseModel):
     question: str = Field(min_length=1, max_length=1000)
+
+
+class KnowledgeBaseCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=500)
+    owner_team: str | None = Field(default=None, max_length=100)
+
+
+class KnowledgeBaseUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=500)
+    owner_team: str | None = Field(default=None, max_length=100)
+
+
+class DocumentUpdate(BaseModel):
+    file_name: str = Field(min_length=1, max_length=500)
