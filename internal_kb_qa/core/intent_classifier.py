@@ -3,14 +3,18 @@
 对外接口：
     classify(query: str) -> Classification
 
-分类类别（在原五类 tech / access_request / incident / complaint / chitchat 基础上
-简化为两类，见 docs/企业内部技术知识库智能问答系统-任务分工.md T6）：
-    - 技术咨询：环境安装、报错排查、接口调试、代码实现、架构配置、系统故障等技术咨询类问题
-    - 通用知识：概念科普、行业资讯、公司制度、生活常识、寒暄闲聊等非技术实操类问题
+分类类别：
+    - tech：技术咨询
+    - access_request：权限/账号申请
+    - incident：故障上报
+    - ticket_inquiry：工单/进度查询
+    - complaint_suggestion：投诉/建议
+    - policy_general：制度/通用知识
+    - common：闲聊
 
 路由约定：
-    - 置信度低于 LOW_CONFIDENCE_THRESHOLD 时一律按「技术咨询」保守路由到带引用的 RAG 主链路；
-    - LLM 调用失败、超时或返回格式非法时降级返回「技术咨询」并记录日志，保证主链路不中断。
+    - 置信度低于 LOW_CONFIDENCE_THRESHOLD 时一律按 tech 保守路由到带引用的 RAG 主链路；
+    - LLM 调用失败、超时或返回格式非法时降级返回 tech 并记录日志，保证主链路不中断。
 """
 
 from __future__ import annotations
@@ -42,11 +46,24 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 # 分类类别（对外契约取值）
-CATEGORY_TECH = "技术咨询"
-CATEGORY_GENERAL = "通用知识"
-VALID_CATEGORIES = frozenset({CATEGORY_TECH, CATEGORY_GENERAL})
+CATEGORY_TECH = "tech"
+CATEGORY_ACCESS_REQUEST = "access_request"
+CATEGORY_INCIDENT = "incident"
+CATEGORY_TICKET_INQUIRY = "ticket_inquiry"
+CATEGORY_COMPLAINT_SUGGESTION = "complaint_suggestion"
+CATEGORY_POLICY_GENERAL = "policy_general"
+CATEGORY_COMMON = "common"
+VALID_CATEGORIES = frozenset({
+    CATEGORY_TECH,
+    CATEGORY_ACCESS_REQUEST,
+    CATEGORY_INCIDENT,
+    CATEGORY_TICKET_INQUIRY,
+    CATEGORY_COMPLAINT_SUGGESTION,
+    CATEGORY_POLICY_GENERAL,
+    CATEGORY_COMMON,
+})
 
-# 低置信度保守路由阈值：confidence < 阈值时按「技术咨询」处理（T6 文档约定）
+# 低置信度保守路由阈值：confidence < 阈值时按 tech 处理
 LOW_CONFIDENCE_THRESHOLD = float(os.getenv("INTENT_CONFIDENCE_THRESHOLD", "0.6"))
 
 # LLM 调用参数
@@ -60,59 +77,75 @@ DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 # T6 few-shot Prompt 模板
 # ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """你是企业内部技术知识库的意图分类助手。
-你的任务：判断用户问题属于「技术咨询」还是「通用知识」，供问答系统主链路路由。
+SYSTEM_PROMPT = """你是企业内部知识库的意图分类助手。
+你的任务是根据用户的核心诉求，将问题严格归入以下七类之一：
 
 分类定义：
-- 「技术咨询」：与研发/运维/测试等技术实操直接相关，例如环境安装部署、报错排查、
-  系统故障处理、接口调试、代码实现、架构与配置调整、性能优化、权限申请等。
-- 「通用知识」：不涉及技术实操的知识性/闲聊类问题，例如概念科普（"什么是……"）、
-  行业资讯、公司制度与福利、生活常识、寒暄闲聊等。
+- "tech"（技术咨询）：部署、配置、代码、接口、性能、一般报错排查等技术实操问题。
+- "access_request"（权限/账号申请）：申请或开通账号、系统权限、数据库权限、VPN、Git 权限等。
+- "incident"（故障上报）：报告正在发生或已经发生的线上事故、宕机、数据异常、P0/P1、发布失败等故障。
+- "ticket_inquiry"（工单/进度查询）：查询已有工单的状态、处理进度、负责人，或催促处理。
+- "complaint_suggestion"（投诉/建议）：表达对服务或答复的不满、投诉，或提出改进意见和建议。
+- "policy_general"（制度/通用知识）：报销、年假、福利、入职等公司制度，以及行业概念、非实操知识。
+- "common"（闲聊）：寒暄、天气、无关话题等不属于业务知识问答的内容。
 
 边界规则：
-- 出现具体技术栈、报错信息、配置项、代码、接口异常、系统故障的 -> 「技术咨询」；
-- 仅做概念解释、原理科普，不涉及具体技术操作动作的 -> 「通用知识」；
-- 拿不准时优先判为「技术咨询」（宁可多查知识库，不直接闲聊打发）。
+- 根据核心诉求分类，不要只按关键词分类。
+- 用户要申请/开通权限，即使提到 Git、数据库等技术名词，也归 access_request。
+- 用户报告线上服务不可用、数据异常、发布失败等事故，归 incident；咨询一般报错的解决方法归 tech。
+- 只有在查询已经提交的工单时才归 ticket_inquiry；新问题本身按其诉求归类。
+- 制度流程和非技术概念知识归 policy_general；纯寒暄或无关话题归 common。
+- 同时包含多个意图时，选择用户最希望当前得到处理的主要意图。
+- 无法确定时优先归 tech，以便进入 RAG 主链路。
 
 输出要求：
 - 只输出一个 JSON 对象，字段为 category、confidence；
-- category 取值仅限 "技术咨询" 或 "通用知识"；
+- category 只能是 "tech"、"access_request"、"incident"、"ticket_inquiry"、
+  "complaint_suggestion"、"policy_general"、"common" 之一；
 - confidence 为 0 到 1 的浮点数，表示分类置信度；
 - 不要输出 JSON 之外的任何文字、解释或 Markdown 代码块。"""
 
-# few-shot 示例（覆盖两类，assistant 侧输出为合法 JSON）
+# few-shot 示例（覆盖七类及易混淆边界，assistant 侧输出为合法 JSON）
 FEW_SHOT_EXAMPLES: tuple[tuple[str, dict], ...] = (
     (
         "本地启动 Spring Boot 服务报 Error creating bean with name 'dataSource'，怎么排查？",
         {"category": CATEGORY_TECH, "confidence": 0.97},
     ),
     (
-        "生产环境 Kafka 消费积压突然升高，有哪些排查步骤？",
-        {"category": CATEGORY_TECH, "confidence": 0.95},
+        "帮我申请生产数据库的只读权限。",
+        {"category": CATEGORY_ACCESS_REQUEST, "confidence": 0.98},
     ),
     (
-        "如何把公司内网 Maven 私服地址配置到 settings.xml？",
-        {"category": CATEGORY_TECH, "confidence": 0.93},
+        "线上支付服务宕机了，所有请求都失败，请立即处理！",
+        {"category": CATEGORY_INCIDENT, "confidence": 0.99},
     ),
     (
-        "调用订单接口一直返回 503 Service Unavailable，调用方该怎么处理？",
-        {"category": CATEGORY_TECH, "confidence": 0.96},
+        "我昨天提交的 INC-1024 工单处理到哪一步了？",
+        {"category": CATEGORY_TICKET_INQUIRY, "confidence": 0.99},
     ),
     (
-        "git push 提示 Permission denied (publickey)，怎么解决？",
-        {"category": CATEGORY_TECH, "confidence": 0.96},
-    ),
-    (
-        "什么是微服务架构，它和单体架构的区别是什么？",
-        {"category": CATEGORY_GENERAL, "confidence": 0.94},
+        "客服给的答复完全没解决问题，希望改进响应流程。",
+        {"category": CATEGORY_COMPLAINT_SUGGESTION, "confidence": 0.97},
     ),
     (
         "公司年假一共有多少天，怎么申请？",
-        {"category": CATEGORY_GENERAL, "confidence": 0.96},
+        {"category": CATEGORY_POLICY_GENERAL, "confidence": 0.98},
+    ),
+    (
+        "什么是微服务架构，它和单体架构有什么区别？",
+        {"category": CATEGORY_POLICY_GENERAL, "confidence": 0.94},
     ),
     (
         "今天天气怎么样？",
-        {"category": CATEGORY_GENERAL, "confidence": 0.98},
+        {"category": CATEGORY_COMMON, "confidence": 0.98},
+    ),
+    (
+        "git push 提示 Permission denied (publickey)，应该怎么排查？",
+        {"category": CATEGORY_TECH, "confidence": 0.96},
+    ),
+    (
+        "请给新同事开通 Git 仓库权限。",
+        {"category": CATEGORY_ACCESS_REQUEST, "confidence": 0.98},
     ),
 )
 
@@ -124,7 +157,7 @@ FEW_SHOT_EXAMPLES: tuple[tuple[str, dict], ...] = (
 class Classification(BaseModel):
     """T6 意图分类结果（对外契约）。"""
 
-    category: str = Field(..., description=f"意图类别：{CATEGORY_TECH} / {CATEGORY_GENERAL}")
+    category: str = Field(..., description=f"意图类别：{' / '.join(sorted(VALID_CATEGORIES))}")
     confidence: float = Field(..., ge=0.0, le=1.0, description="分类置信度，0~1")
 
 
@@ -134,14 +167,14 @@ class Classification(BaseModel):
 
 
 def classify(query: str) -> Classification:
-    """对用户问题做「技术咨询 / 通用知识」二分类，供主链路路由。
+    """对用户问题做七分类，供主链路路由。
 
     处理流程：
     1. 空 query 直接降级；
     2. 组装 few-shot Prompt 调用 LLM，要求仅输出 JSON；
     3. 解析并校验 LLM 返回（容忍 Markdown 代码块围栏与前后附加文字）；
-    4. 置信度低于 LOW_CONFIDENCE_THRESHOLD 时按「技术咨询」保守路由；
-    5. LLM 失败 / 超时 / 返回格式非法时降级返回「技术咨询」并记录日志，主链路不中断。
+    4. 置信度低于 LOW_CONFIDENCE_THRESHOLD 时按 tech 保守路由；
+    5. LLM 失败 / 超时 / 返回格式非法时降级返回 tech 并记录日志，主链路不中断。
 
     Args:
         query: 用户问题。
@@ -231,10 +264,10 @@ def _get_client() -> OpenAI | None:
     api_key, base_url, model = _load_llm_settings()
     _llm_model = model
     if OpenAI is None:
-        logger.error("intent.classify.no_openai_pkg: openai 包未安装，意图分类降级为技术咨询")
+        logger.error("intent.classify.no_openai_pkg: openai 包未安装，意图分类降级为 tech")
         return None
     if not api_key:
-        logger.error("intent.classify.no_api_key: DASHSCOPE_API_KEY 未配置，意图分类降级为技术咨询")
+        logger.error("intent.classify.no_api_key: DASHSCOPE_API_KEY 未配置，意图分类降级为 tech")
         return None
     try:
         _llm_client = OpenAI(api_key=api_key, base_url=base_url, timeout=LLM_TIMEOUT_SECONDS)
@@ -262,21 +295,31 @@ def _call_llm(messages: list[dict[str, str]]) -> str:
 
 
 def _normalize_category(value: object) -> str | None:
-    """把 LLM 可能返回的别名（如"技术问题"、"general"）归一为两类契约取值。"""
+    """校验类别，并兼容模型偶尔返回的中英文展示名称。"""
     if not isinstance(value, str):
         return None
     text = value.strip().lower()
     if not text:
         return None
-    if text == "技术咨询" or text.startswith("技术"):
-        return CATEGORY_TECH
-    if "tech" in text:
-        return CATEGORY_TECH
-    if "通用" in text or "知识" in text or "闲聊" in text or "其他" in text:
-        return CATEGORY_GENERAL
-    if "general" in text or "chitchat" in text:
-        return CATEGORY_GENERAL
-    return None
+    if text in VALID_CATEGORIES:
+        return text
+    aliases = {
+        "技术咨询": CATEGORY_TECH,
+        "权限/账号申请": CATEGORY_ACCESS_REQUEST,
+        "权限申请": CATEGORY_ACCESS_REQUEST,
+        "账号申请": CATEGORY_ACCESS_REQUEST,
+        "故障上报": CATEGORY_INCIDENT,
+        "工单/进度查询": CATEGORY_TICKET_INQUIRY,
+        "工单查询": CATEGORY_TICKET_INQUIRY,
+        "进度查询": CATEGORY_TICKET_INQUIRY,
+        "投诉/建议": CATEGORY_COMPLAINT_SUGGESTION,
+        "投诉建议": CATEGORY_COMPLAINT_SUGGESTION,
+        "制度/通用知识": CATEGORY_POLICY_GENERAL,
+        "制度通用知识": CATEGORY_POLICY_GENERAL,
+        "通用知识": CATEGORY_POLICY_GENERAL,
+        "闲聊": CATEGORY_COMMON,
+    }
+    return aliases.get(text)
 
 
 def _parse_llm_json(raw: str) -> tuple[str, float] | None:
@@ -315,8 +358,8 @@ def _parse_llm_json(raw: str) -> tuple[str, float] | None:
 
 
 def _fallback(reason: str) -> Classification:
-    """降级结果：一律按「技术咨询」保守路由，confidence=0 提示下游信息不足。"""
-    full_reason = f"降级为技术咨询（{reason}）"
+    """降级结果：一律按 tech 保守路由，confidence=0 提示下游信息不足。"""
+    full_reason = f"降级为 tech（{reason}）"
     logger.warning("intent.classify.fallback: %s", full_reason)
     return Classification(category=CATEGORY_TECH, confidence=0.0)
 
@@ -327,7 +370,7 @@ def _fallback(reason: str) -> Classification:
 
 
 def main() -> None:
-    """T6 本地测试：对一组两类 query 分类并与预期比对。
+    """T6 本地测试：对七类 query 及边界场景分类并与预期比对。
 
     运行方式（在项目根目录、激活 .venv 后）：
         python -m internal_kb_qa.core.intent_classifier
@@ -337,17 +380,28 @@ def main() -> None:
     需要已配置 DASHSCOPE_API_KEY（环境变量或 config.ini [llm] 段），否则全部走降级路径。
     """
     test_cases: list[tuple[str, str]] = [
-        # ---- 预期：技术咨询 -------
+        # tech：技术实操、普通报错和排查咨询
         ("打包部署到测试环境时页面 502，nginx 日志显示 upstream timed out，怎么排查？", CATEGORY_TECH),
-        ("用 uv 给 Python 项目创建虚拟环境并从 requirements.txt 安装依赖，完整步骤是什么？", CATEGORY_TECH),
-        ("MySQL 主从同步延迟突然变大，有哪些排查思路？", CATEGORY_TECH),
-        ("Java 里 ConcurrentHashMap 和 HashMap 在并发场景下应该怎么选？", CATEGORY_TECH),
-        ("WebSocket 连接升级时返回 401 未授权，前端怎么带上 SSO token？", CATEGORY_TECH),
-        # ---- 预期：通用知识 -------
-        ("什么是 Kubernetes，它主要解决什么问题？", CATEGORY_GENERAL),
-        ("公司报销流程是什么，发票应该怎么贴？", CATEGORY_GENERAL),
-        ("程序员久坐腰疼有什么缓解办法？", CATEGORY_GENERAL),
-        # ---- 边界：空 query 预期降级为技术咨询 ----
+        ("订单接口返回 401，调用时怎样正确携带 SSO token？", CATEGORY_TECH),
+        # access_request：账号或权限的申请/开通
+        ("请帮我开通 VPN 账号，我下周需要远程办公。", CATEGORY_ACCESS_REQUEST),
+        ("需要申请 GitLab 项目的 Developer 权限。", CATEGORY_ACCESS_REQUEST),
+        # incident：正在发生或已经发生的生产故障
+        ("生产环境订单服务全挂了，当前用户都无法下单。", CATEGORY_INCIDENT),
+        ("刚才发布失败并造成线上 P1 事故，请立即介入。", CATEGORY_INCIDENT),
+        # ticket_inquiry：已有工单的状态、进度与催办
+        ("工单 T20260823001 现在是谁在处理？", CATEGORY_TICKET_INQUIRY),
+        ("上周提的权限工单还没完成，麻烦催一下进度。", CATEGORY_TICKET_INQUIRY),
+        # complaint_suggestion：投诉、不满或改进建议
+        ("这个问题反馈三次都没人处理，我要投诉。", CATEGORY_COMPLAINT_SUGGESTION),
+        ("建议知识库增加搜索结果纠错功能。", CATEGORY_COMPLAINT_SUGGESTION),
+        # policy_general：公司制度、福利和非技术概念知识
+        ("出差住宿费的报销标准是多少？", CATEGORY_POLICY_GENERAL),
+        ("什么是零信任安全模型？", CATEGORY_POLICY_GENERAL),
+        # common：寒暄、天气及无关话题
+        ("早上好，今天心情怎么样？", CATEGORY_COMMON),
+        ("上海明天天气如何？", CATEGORY_COMMON),
+        # 边界：空 query 预期降级为 tech
         ("", CATEGORY_TECH),
     ]
 
