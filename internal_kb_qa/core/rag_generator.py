@@ -1,8 +1,8 @@
 """T7 重排 + DashScope 流式生成回答。
 
 主链路：
-    T6 classify → 通用知识直接 LLM
-    技术咨询 → T13 strategy_selector → query_rewrite → T4 hybrid_search → T7 rerank → 生成
+    T6 classify（七类）→ 制度/通用知识、闲聊直接 LLM；工单/投诉转人工
+    技术咨询/权限申请/故障上报 → T13 strategy_selector → query_rewrite → T4 hybrid_search → T7 rerank → 生成
 
 对外接口：
     rag_answer(query, history, category) -> RAGResult
@@ -19,10 +19,25 @@ from openai import OpenAI
 from base.config import Config
 from base.logger import logger
 from internal_kb_qa.core.hit import Hit
-from internal_kb_qa.core.intent_classifier import CATEGORY_GENERAL, CATEGORY_TECH, classify
+from internal_kb_qa.core.intent_classifier import (
+    CATEGORY_ACCESS_REQUEST,
+    CATEGORY_COMMON,
+    CATEGORY_COMPLAINT_SUGGESTION,
+    CATEGORY_INCIDENT,
+    CATEGORY_POLICY_GENERAL,
+    CATEGORY_TECH,
+    CATEGORY_TICKET_INQUIRY,
+    classify,
+)
 from internal_kb_qa.core.prompts import RAGPrompts
 from internal_kb_qa.core.query_rewrite import RewrittenQuery, query_rewrite
 from internal_kb_qa.core.search_strategy import SearchStrategy, build_search_strategy
+
+# 不检索、直接 LLM 回答的类别（制度/通用知识 + 闲聊）
+_DIRECT_LLM_CATEGORIES = frozenset({CATEGORY_POLICY_GENERAL, CATEGORY_COMMON})
+
+# 直接转人工的类别（工单/进度查询 + 投诉/建议）
+_NEED_HUMAN_CATEGORIES = frozenset({CATEGORY_TICKET_INQUIRY, CATEGORY_COMPLAINT_SUGGESTION})
 
 
 @dataclass
@@ -154,7 +169,8 @@ def _build_general_prompt(query: str, history: list | None) -> str:
     )
 
 
-def _answer_general_knowledge(query: str, history: list | None, conf: Config) -> RAGResult:
+def _answer_direct_llm(query: str, history: list | None, conf: Config, category: str) -> RAGResult:
+    """不检索、直接 LLM 回答（制度/通用知识、闲聊）。"""
     client = _get_llm_client(conf)
     answer = _call_llm_sync(client, conf.LLM_MODEL, _build_general_prompt(query, history))
     return RAGResult(
@@ -162,7 +178,7 @@ def _answer_general_knowledge(query: str, history: list | None, conf: Config) ->
         sources=[],
         confidence=1.0,
         need_human=False,
-        category=CATEGORY_GENERAL,
+        category=category,
     )
 
 
@@ -205,10 +221,17 @@ def rag_answer(
     if category is None:
         category = classify(query).category
 
-    if category == CATEGORY_GENERAL:
-        result = _answer_general_knowledge(query, history, conf)
-        logger.info(f"通用知识回答完成, 耗时={time.time() - start:.2f}s")
+    if category in _DIRECT_LLM_CATEGORIES:
+        result = _answer_direct_llm(query, history, conf, category)
+        logger.info(f"直接 LLM 回答完成 category={category}, 耗时={time.time() - start:.2f}s")
         return result
+
+    if category in _NEED_HUMAN_CATEGORIES:
+        return RAGResult(
+            answer="该问题需要人工处理，建议转人工。",
+            sources=[], confidence=0.0, need_human=True,
+            category=category,
+        )
 
     hits, rewritten, strategy = _run_rag_pipeline(query, history, category)
     advanced = rewritten.advanced_strategy if rewritten else ""
@@ -271,10 +294,14 @@ def rag_answer_stream(
     if category is None:
         category = classify(query).category
 
-    if category == CATEGORY_GENERAL:
+    if category in _DIRECT_LLM_CATEGORIES:
         client = _get_llm_client(conf)
         for token in _call_llm_stream(client, conf.LLM_MODEL, _build_general_prompt(query, history)):
             yield token
+        return
+
+    if category in _NEED_HUMAN_CATEGORIES:
+        yield "该问题需要人工处理，建议转人工。"
         return
 
     hits, rewritten, strategy = _run_rag_pipeline(query, history, category)
@@ -314,8 +341,11 @@ def prepare_rag_context(
     if category is None:
         category = classify(query).category
 
-    if category == CATEGORY_GENERAL:
+    if category in _DIRECT_LLM_CATEGORIES:
         return [], [], 1.0, False, ""
+
+    if category in _NEED_HUMAN_CATEGORIES:
+        return [], [], 0.0, True, ""
 
     hits, rewritten, strategy = _run_rag_pipeline(query, history, category)
     advanced = rewritten.advanced_strategy if rewritten else ""
@@ -344,9 +374,9 @@ def _main() -> None:
         print("跳过 live 测试：未配置 DASHSCOPE_API_KEY")
         return
 
-    # 1) 通用知识：不检索
-    general = rag_answer("什么是 Kubernetes？", category=CATEGORY_GENERAL)
-    print(f"[通用知识] category={general.category} sources={len(general.sources)}")
+    # 1) 制度/通用知识：不检索，直接 LLM
+    general = rag_answer("什么是 Kubernetes？", category=CATEGORY_POLICY_GENERAL)
+    print(f"[制度/通用知识] category={general.category} sources={len(general.sources)}")
     print(f"  answer: {general.answer[:120]}...")
 
     # 2) 技术咨询：全链路（T4/Milvus 或 torch 不可用时可能转人工兜底）

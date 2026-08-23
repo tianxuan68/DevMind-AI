@@ -50,7 +50,7 @@ class RAGPrompts:
 4. 保持原意，不添加无关内容。
 5. 若问题已足够清晰，保持原样或微调。
 
-**意图类别**: {category}（技术咨询 / 通用知识）
+**意图类别**: {category}（tech=技术咨询 / access_request=权限申请 / incident=故障上报 / ticket_inquiry=工单查询 / complaint_suggestion=投诉建议 / policy_general=制度通用 / common=闲聊）
 **对话历史**:
 {history}
 **原始问题**: {query}
