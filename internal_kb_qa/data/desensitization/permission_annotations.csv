@@ -1,0 +1,8 @@
+﻿project_relative_source,source_absolute_path,title,team,system,doc_type,version,last_updated,security_level,annotation_status,evidence_note
+internal_kb_qa/data/rag_seed/access_request.md,E:\Project\pycharm\RAG_Project\internal_kb_qa\data\rag_seed\access_request.md,权限与账号申请指引,infra,internal_tech_kb,faq,1.0,2026-08-22,public,来自项目种子文档元数据,字段值直接读取源文件 front matter；不是对真实企业权限系统的证明
+internal_kb_qa/data/rag_seed/common.md,E:\Project\pycharm\RAG_Project\internal_kb_qa\data\rag_seed\common.md,闲聊与通用对话模板,ops,internal_tech_kb,faq,1.0,2026-08-22,public,来自项目种子文档元数据,字段值直接读取源文件 front matter；不是对真实企业权限系统的证明
+internal_kb_qa/data/rag_seed/complaint_suggestion.md,E:\Project\pycharm\RAG_Project\internal_kb_qa\data\rag_seed\complaint_suggestion.md,投诉与建议处理说明,ops,internal_tech_kb,faq,1.0,2026-08-22,public,来自项目种子文档元数据,字段值直接读取源文件 front matter；不是对真实企业权限系统的证明
+internal_kb_qa/data/rag_seed/incident.md,E:\Project\pycharm\RAG_Project\internal_kb_qa\data\rag_seed\incident.md,故障上报与应急响应规范,ops,internal_tech_kb,runbook,1.0,2026-08-22,team,来自项目种子文档元数据,字段值直接读取源文件 front matter；不是对真实企业权限系统的证明
+internal_kb_qa/data/rag_seed/policy_general.md,E:\Project\pycharm\RAG_Project\internal_kb_qa\data\rag_seed\policy_general.md,公司制度与通用知识问答,hr,internal_tech_kb,wiki,1.0,2026-08-22,public,来自项目种子文档元数据,字段值直接读取源文件 front matter；不是对真实企业权限系统的证明
+internal_kb_qa/data/rag_seed/tech.md,E:\Project\pycharm\RAG_Project\internal_kb_qa\data\rag_seed\tech.md,研发技术咨询高频问题与排查手册,infra,internal_tech_kb,faq,1.0,2026-08-22,public,来自项目种子文档元数据,字段值直接读取源文件 front matter；不是对真实企业权限系统的证明
+internal_kb_qa/data/rag_seed/ticket_inquiry.md,E:\Project\pycharm\RAG_Project\internal_kb_qa\data\rag_seed\ticket_inquiry.md,工单进度查询说明,ops,internal_tech_kb,faq,1.0,2026-08-22,public,来自项目种子文档元数据,字段值直接读取源文件 front matter；不是对真实企业权限系统的证明
