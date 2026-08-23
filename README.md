@@ -24,7 +24,7 @@ FastAPI + MySQL/BM25 + Redis + Milvus + BGE-M3 + bge-reranker-v2-m3 + DashScope 
 
 ```shell
 # 安装依赖
-uv sync          # 或 pip install -r requirements.txt
+uv sync
 
 # 启动依赖服务
 cd docker/milvus_redis && docker compose up -d
