@@ -49,6 +49,8 @@ coverage.xml
 *.py.cover
 .hypothesis/
 .pytest_cache/
+# PyCharm pytest runner 的临时根目录（basetemp）
+pytest-cache-files-*/
 cover/
 
 # Translations
