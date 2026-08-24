@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Pencil, Plus, Search, Trash2, Upload } from "lucide-react";
+import { Eye, Pencil, Plus, Search, Trash2, Upload } from "lucide-react";
 import { knowledgeApi } from "../api/qa";
 import UploadModal from "./UploadModal";
 
@@ -21,7 +21,7 @@ function AdminPageShell({ title, desc, children, className = "" }) {
   );
 }
 
-export default function KnowledgeAdmin() {
+export default function KnowledgeAdmin({ onViewChunks }) {
   const [kbs, setKbs] = useState([]);
   const [docs, setDocs] = useState([]);
   const [selectedKbId, setSelectedKbId] = useState("");
@@ -136,6 +136,23 @@ export default function KnowledgeAdmin() {
     }
   }
 
+  async function pollIndexing(kbId) {
+    setMessage("文件已上传，正在切块并向量化，请稍候…");
+    for (let attempt = 0; attempt < 45; attempt += 1) {
+      const data = await knowledgeApi.listDocs({ knowledge_base_id: kbId, page_size: 100 });
+      const items = data.items || [];
+      const pending = items.filter((doc) => doc.status === "处理中");
+      await loadDocs(kbId, query);
+      await loadBases();
+      if (!pending.length) {
+        setMessage("文档索引完成，可在列表中查看子块数量。");
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+    setMessage("部分文档仍在索引中（大文件需更久），请稍后刷新列表。");
+  }
+
   return (
     <AdminPageShell
       title="知识库管理"
@@ -161,7 +178,7 @@ export default function KnowledgeAdmin() {
                   onClick={() => { setSelectedKbId(kb.id); setQuery(""); }}
                 >
                   <span className="kb-list-name">{kb.name}</span>
-                  <span className="kb-list-meta">{kb.docCount} 篇 · {kb.owner}</span>
+                  <span className="kb-list-meta">{kb.docCount} 篇 · {kb.owner} · 创建：{kb.createdBy || "系统预置"}</span>
                 </button>
                 <div className="kb-list-actions">
                   <button type="button" onClick={() => setKbForm({ id: kb.id, name: kb.name, description: kb.description, owner: kb.owner })} aria-label="编辑"><Pencil size={14} /></button>
@@ -174,9 +191,13 @@ export default function KnowledgeAdmin() {
 
         <section className="kb-main admin-card">
           <header className="kb-main-head">
-            <div>
+            <div className="kb-main-title">
               <h2>{selectedKb?.name || "请选择知识库"}</h2>
-              <p>共 {docs.length} 篇文档{query ? "（已筛选）" : ""}</p>
+              <span className="kb-doc-count">
+                {docs.length} 篇文档{query ? " · 已筛选" : ""}
+                {selectedKb?.createdBy ? ` · 创建：${selectedKb.createdBy}` : ""}
+                {selectedKb?.lastUploader ? ` · 最后上传：${selectedKb.lastUploader}` : ""}
+              </span>
             </div>
             <div className="kb-toolbar">
               <div className="kb-search">
@@ -188,7 +209,7 @@ export default function KnowledgeAdmin() {
                   aria-label="搜索文档"
                 />
               </div>
-              <GlassButton className="feature-primary" disabled={!selectedKb?.id} onClick={() => setUploadOpen(true)}>
+              <GlassButton className="feature-primary kb-upload-btn" disabled={!selectedKb?.id} onClick={() => setUploadOpen(true)}>
                 <Upload size={17} /> 上传文档
               </GlassButton>
             </div>
@@ -202,6 +223,7 @@ export default function KnowledgeAdmin() {
                   <th>类型</th>
                   <th>大小</th>
                   <th>状态</th>
+                  <th>切片数</th>
                   <th>上传人</th>
                   <th>更新时间</th>
                   <th>操作</th>
@@ -209,7 +231,7 @@ export default function KnowledgeAdmin() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={7} className="empty-cell">加载中…</td></tr>
+                  <tr><td colSpan={8} className="empty-cell">加载中…</td></tr>
                 ) : docs.length ? docs.map((doc) => (
                   <tr key={doc.id}>
                     <td>
@@ -225,16 +247,27 @@ export default function KnowledgeAdmin() {
                         {doc.status}
                       </span>
                     </td>
+                    <td>{doc.chunkCount ?? 0}</td>
                     <td>{doc.uploader}</td>
                     <td>{doc.updatedAt}</td>
                     <td className="row-actions">
+                      {onViewChunks ? (
+                        <button
+                          type="button"
+                          onClick={() => onViewChunks(selectedKb.id, doc.id)}
+                          aria-label="查看切块"
+                          title="查看切块"
+                        >
+                          <Eye size={15} />
+                        </button>
+                      ) : null}
                       <button type="button" onClick={() => setDocForm({ id: doc.id, name: doc.name })} aria-label="编辑"><Pencil size={15} /></button>
                       <button type="button" onClick={() => deleteDoc(doc.id)} aria-label="删除"><Trash2 size={15} /></button>
                     </td>
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={7} className="empty-cell">
+                    <td colSpan={8} className="empty-cell">
                       {query ? "未找到匹配的文档" : "暂无文档，点击「上传文档」添加"}
                     </td>
                   </tr>
@@ -252,6 +285,7 @@ export default function KnowledgeAdmin() {
         onDone={async () => {
           await loadDocs(selectedKb.id, query);
           await loadBases();
+          await pollIndexing(selectedKb.id);
         }}
       />
 

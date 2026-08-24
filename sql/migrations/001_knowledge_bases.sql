@@ -25,7 +25,7 @@ ALTER TABLE documents ADD COLUMN created_by BIGINT UNSIGNED DEFAULT NULL COMMENT
 ALTER TABLE documents ADD COLUMN index_status VARCHAR(20) DEFAULT 'indexed' COMMENT 'processing/indexed/failed' AFTER created_by;
 ALTER TABLE documents ADD KEY idx_documents_kb (knowledge_base_id, index_status);
 
-INSERT IGNORE INTO knowledge_bases (id, name, description, owner_team, status) VALUES
-(1, '平台工程知识库', '平台架构、中间件与工程规范', '平台组', 'active'),
-(2, '安全与合规知识库', '安全基线、合规与身份认证', '安全组', 'active'),
-(3, '研发实践知识库', '研发流程、CI/CD 与代码规范', '研发组', 'active');
+INSERT IGNORE INTO knowledge_bases (id, name, description, owner_team, status, created_by) VALUES
+(1, '平台工程知识库', '平台架构、中间件与工程规范', '平台组', 'active', 1),
+(2, '安全与合规知识库', '安全基线、合规与身份认证', '安全组', 'active', 1),
+(3, '研发实践知识库', '研发流程、CI/CD 与代码规范', '研发组', 'active', 1);

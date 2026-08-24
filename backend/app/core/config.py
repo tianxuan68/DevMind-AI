@@ -42,7 +42,7 @@ class Settings:
         self.JWT_EXPIRE_HOURS = int(os.getenv("JWT_EXPIRE_HOURS", "168"))
         self.SMS_CODE_TTL = int(os.getenv("SMS_CODE_TTL", "300"))
         self.SMS_SEND_INTERVAL = int(os.getenv("SMS_SEND_INTERVAL", "60"))
-        self.APP_DEBUG = os.getenv("APP_DEBUG", "true").lower() in {"1", "true", "yes", "on"}
+        self.APP_DEBUG = os.getenv("APP_DEBUG", "false").lower() in {"1", "true", "yes", "on"}
 
         # 问题缓存：随机 TTL 防止缓存雪崩；空值短 TTL 防止穿透
         self.QUESTION_CACHE_TTL = int(os.getenv("QUESTION_CACHE_TTL", "600"))
@@ -51,6 +51,38 @@ class Settings:
 
         # 文档上传目录
         self.UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", str(PROJECT_ROOT / "data" / "uploads")))
+
+        # 阿里云 OSS（Python SDK V2，凭证走 OSS_ACCESS_KEY_ID / OSS_ACCESS_KEY_SECRET）
+        self.OSS_ENABLED = os.getenv("OSS_ENABLED", parser.get("oss", "enabled", fallback="false")).lower() in {
+            "1", "true", "yes", "on",
+        }
+        self.OSS_REGION = os.getenv("OSS_REGION", parser.get("oss", "region", fallback=""))
+        self.OSS_BUCKET = os.getenv("OSS_BUCKET", parser.get("oss", "bucket", fallback=""))
+        self.OSS_ENDPOINT = os.getenv("OSS_ENDPOINT", parser.get("oss", "endpoint", fallback=""))
+        self.OSS_PREFIX = os.getenv("OSS_PREFIX", parser.get("oss", "prefix", fallback="devmind-ai"))
+        self.OSS_PRESIGN_EXPIRES = int(os.getenv("OSS_PRESIGN_EXPIRES", parser.get("oss", "presign_expires_seconds", fallback="3600")))
+
+        # 日志
+        self.LOG_DIR = Path(os.getenv("LOG_DIR", str(PROJECT_ROOT / "logs")))
+        self.LOG_FILE_NAME = os.getenv("LOG_FILE_NAME", "backend.log")
+
+        # Spug 短信（凭证请通过环境变量注入）
+        self.SPUG_SMS_ENABLED = os.getenv("SPUG_SMS_ENABLED", parser.get("sms", "enabled", fallback="false")).lower() in {
+            "1", "true", "yes", "on",
+        }
+        self.SPUG_SMS_MODE = os.getenv("SPUG_SMS_MODE", parser.get("sms", "mode", fallback="send"))
+        self.SPUG_SMS_TEMPLATE = os.getenv("SPUG_SMS_TEMPLATE", parser.get("sms", "template", fallback="k2RVBmyzanj0ny3b"))
+        default_sms_api = f"https://push.spug.cc/sms/{self.SPUG_SMS_TEMPLATE}"
+        self.SPUG_SMS_API_URL = os.getenv("SPUG_SMS_API_URL", parser.get("sms", "api_url", fallback=default_sms_api))
+        self.SPUG_SMS_SEND_URL = os.getenv(
+            "SPUG_SMS_SEND_URL",
+            parser.get("sms", "send_url", fallback=f"https://push.spug.cc/send/{self.SPUG_SMS_TEMPLATE}"),
+        )
+        self.SPUG_SMS_APP_NAME = os.getenv("SPUG_SMS_APP_NAME", parser.get("sms", "app_name", fallback="DevMind AI"))
+        self.SPUG_SMS_APP_KEY = os.getenv("SPUG_SMS_APP_KEY", parser.get("sms", "app_key", fallback=""))
+        self.SPUG_SMS_CREDENTIAL = os.getenv("SPUG_SMS_CREDENTIAL", parser.get("sms", "credential", fallback=""))
+        self.SPUG_SMS_NUMBER = os.getenv("SPUG_SMS_NUMBER", parser.get("sms", "number", fallback="10"))
+        self.SPUG_SMS_TIMEOUT = int(os.getenv("SPUG_SMS_TIMEOUT", parser.get("sms", "timeout", fallback="10")))
 
 
 settings = Settings()

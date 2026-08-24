@@ -1,0 +1,40 @@
+# 应用层 Docker Compose（依赖 docker/docker-compose.yml 基础设施）
+# 用法：
+#   cd docker
+#   docker compose -f docker-compose.yml -f docker-compose.app.yml up -d --build
+
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/backend/Dockerfile
+    container_name: devmind_backend
+    env_file:
+      - ../backend/.env
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      MILVUS_HOST: milvus
+      MILVUS_PORT: "19530"
+      OMP_NUM_THREADS: "1"
+      RETRIEVAL_WARMUP: "false"
+    ports:
+      - "8004:8004"
+    volumes:
+      - ../data/uploads:/app/data/uploads
+      - ../logs:/app/logs
+      - ../internal_kb_qa/models:/app/internal_kb_qa/models:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      milvus:
+        condition: service_started
+    networks:
+      - devmind_network
+    restart: unless-stopped

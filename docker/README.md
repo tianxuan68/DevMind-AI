@@ -1,20 +1,16 @@
-# docker（T11 私有化部署）
+# docker（私有化部署）
 
-所有服务已合并到单文件：`docker/docker-compose.yml`
+基础设施：`docker/docker-compose.yml`（MySQL / Redis / Milvus / Neo4j）
 
-包含服务：
+可选后端容器：`docker-compose -f docker-compose.yml -f docker-compose.app.yml up -d --build`
 
-- MySQL
-- Redis
-- etcd
-- MinIO
-- Milvus
-- Neo4j
+完整 8 步生产部署见根目录 **[DEPLOYMENT.md](../DEPLOYMENT.md)**。
 
-启动：
+启动基础设施：
 
 ```powershell
 cd E:\tianxuan\DevMind-AI\docker
+copy .env.example .env
 docker compose up -d
 ```
 

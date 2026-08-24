@@ -1,0 +1,20 @@
+[Unit]
+Description=DevMind-AI Backend API
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+User=devmind
+WorkingDirectory=/opt/devmind-ai
+EnvironmentFile=/opt/devmind-ai/backend/.env
+Environment=OMP_NUM_THREADS=1
+Environment=OPENBLAS_NUM_THREADS=1
+Environment=MKL_NUM_THREADS=1
+Environment=RETRIEVAL_WARMUP=false
+ExecStart=/opt/devmind-ai/.venv/bin/uvicorn backend.app.main:app --host 127.0.0.1 --port 8004
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

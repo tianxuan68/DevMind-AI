@@ -66,11 +66,12 @@ async function request(path, { method = "GET", body, auth = false } = {}) {
 
   if (!response.ok) {
     handleAuthError(response.status);
-    let message = data?.detail || `请求失败（${response.status}）`;
-    if (typeof message !== "string") message = JSON.stringify(message);
-    if (response.status >= 500 && !data?.detail) {
-      message = "服务端错误：请确认后端已启动，且已执行 sql/schema.sql 初始化数据库";
+    let message = data?.detail || (typeof data === "string" ? data : null);
+    if (!message && response.status >= 500) {
+      message = `服务端错误（HTTP ${response.status}）`;
     }
+    if (!message) message = `请求失败（${response.status}）`;
+    if (typeof message !== "string") message = JSON.stringify(message);
     const error = new Error(message);
     error.status = response.status;
     throw error;
@@ -78,24 +79,34 @@ async function request(path, { method = "GET", body, auth = false } = {}) {
   return data;
 }
 
-export function uploadFormData(path, formData, { onProgress, auth = true } = {}) {
+export function uploadFormData(path, formData, { onProgress, auth = true, timeoutMs = 120000 } = {}) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    const timer = setTimeout(() => {
+      xhr.abort();
+      reject(new Error("上传超时，请确认后端已启动并重试"));
+    }, timeoutMs);
+
     xhr.open("POST", `${API_BASE_URL}${path}`);
     if (auth) {
       const token = getToken();
       if (!token) {
+        clearTimeout(timer);
         reject(new Error("请先登录"));
         return;
       }
       xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     }
+    xhr.upload.onloadstart = () => {
+      if (onProgress) onProgress(1);
+    };
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && onProgress) {
-        onProgress(Math.round((event.loaded / event.total) * 100));
+        onProgress(Math.max(1, Math.round((event.loaded / event.total) * 100)));
       }
     };
     xhr.onload = () => {
+      clearTimeout(timer);
       let data = null;
       try {
         data = JSON.parse(xhr.responseText);
@@ -103,6 +114,7 @@ export function uploadFormData(path, formData, { onProgress, auth = true } = {})
         data = null;
       }
       if (xhr.status >= 200 && xhr.status < 300) {
+        if (onProgress) onProgress(100);
         resolve(data);
         return;
       }
@@ -110,8 +122,55 @@ export function uploadFormData(path, formData, { onProgress, auth = true } = {})
       const message = data?.detail || `上传失败（${xhr.status}）`;
       reject(new Error(typeof message === "string" ? message : JSON.stringify(message)));
     };
-    xhr.onerror = () => reject(new Error("网络错误，上传失败"));
+    xhr.onerror = () => {
+      clearTimeout(timer);
+      reject(new Error("网络错误：请确认 Nginx/后端 API 可访问"));
+    };
+    xhr.onabort = () => {
+      clearTimeout(timer);
+      reject(new Error("上传已取消或超时"));
+    };
     xhr.send(formData);
+  });
+}
+
+/** 浏览器直传 OSS 预签名 URL（可获取真实上传进度） */
+export function uploadToPresignedUrl(url, file, { headers = {}, onProgress, timeoutMs = 600000 } = {}) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const timer = setTimeout(() => {
+      xhr.abort();
+      reject(new Error("OSS 上传超时"));
+    }, timeoutMs);
+
+    xhr.open("PUT", url);
+    Object.entries(headers || {}).forEach(([key, value]) => {
+      if (value != null && value !== "") xhr.setRequestHeader(key, value);
+    });
+    xhr.upload.onloadstart = () => onProgress?.(1);
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && onProgress) {
+        onProgress(Math.max(1, Math.round((event.loaded / event.total) * 100)));
+      }
+    };
+    xhr.onload = () => {
+      clearTimeout(timer);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress?.(100);
+        resolve({ status: xhr.status });
+        return;
+      }
+      reject(new Error(`OSS 上传失败（${xhr.status}）`));
+    };
+    xhr.onerror = () => {
+      clearTimeout(timer);
+      reject(new Error("OSS 上传网络错误，请检查 Bucket CORS 配置"));
+    };
+    xhr.onabort = () => {
+      clearTimeout(timer);
+      reject(new Error("OSS 上传已取消或超时"));
+    };
+    xhr.send(file);
   });
 }
 
@@ -144,9 +203,13 @@ export const knowledgeApi = {
     formData.append("file", file);
     return uploadFormData("/api/knowledge/docs", formData, { onProgress, auth: true });
   },
+  initOssUpload: (body) => request("/api/knowledge/docs/oss/init", { method: "POST", body, auth: true }),
+  completeOssUpload: (docId) => request(`/api/knowledge/docs/${docId}/oss/complete`, { method: "POST", auth: true }),
   updateDoc: (id, body) => request(`/api/knowledge/docs/${id}`, { method: "PATCH", body, auth: true }),
   deleteDoc: (id) => request(`/api/knowledge/docs/${id}`, { method: "DELETE", auth: true }),
   detail: (id) => request(`/api/knowledge/docs/${id}`, { auth: true }),
+  listChunks: (docId) => request(`/api/knowledge/docs/${docId}/chunks`, { auth: true }),
+  searchRetrieval: (body) => request("/api/knowledge/retrieval/search", { method: "POST", body, auth: true }),
   /** @deprecated 兼容旧组件，请使用 listDocs */
   list: (params = {}) => knowledgeApi.listDocs(params),
 };

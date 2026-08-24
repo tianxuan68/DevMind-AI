@@ -1,73 +1,46 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowRight, Bell, BookOpen, Bot, Building2, ChevronDown, CircleHelp,
-  Clipboard, Copy, Eye, EyeOff, FileText, KeyRound,
-  Library, LogOut, MessageCircle, PanelLeftClose, PanelRight, Pencil,
-  Search, Send, Settings, ShieldCheck, SquarePen, User,
+  ArrowRight, ArrowUp, Bell, BookOpen, Bot, Building2, ChevronDown,
+  Clipboard, Copy, FileText, KeyRound,
+  Library, LogOut, MessageCircle, MessageSquare, PanelLeftClose, PanelRight, Pencil, Plus,
+  Search, Settings, ShieldCheck, SquarePen, User,
   Wrench, X, ChevronRight,
 } from "lucide-react";
 import "./styles.css";
 import KnowledgeAdmin from "./components/KnowledgeAdmin";
+import ChunkViewer from "./components/ChunkViewer";
+import SelectField from "./components/SelectField";
+import LoginPage from "./components/LoginPage";
+import LegalPage from "./components/LegalPage";
 import {
-  authApi, clearAuth, getStoredUser, getToken, knowledgeApi, setAuth, setUnauthorizedHandler,
+  authApi, clearAuth, faqApi, getStoredUser, getToken, knowledgeApi, setUnauthorizedHandler,
 } from "./api/qa";
 
-const DEMO_ANSWER =
-  "Milvus 非常适合企业级 RAG 场景，主要体现在以下三点：\n\n• 分布式架构：基于云原生设计，支持弹性扩展与高可用部署，轻松应对大规模数据与并发场景。\n• 高性能向量检索：支持多种索引算法，在亿级向量规模下仍能保持毫秒级检索延迟。\n• 良好的可扩展性：存储与计算解耦，支持水平扩展与多租户隔离，满足企业知识库长期演进需求。";
-
-const DEMO_CITATIONS = [
-  {
-    id: "c1",
-    type: "PDF",
-    title: "RAG架构设计规范.pdf",
-    location: "第 12 页",
-    score: "94%",
-    matchText: "RAG 系统的核心在于高效的检索与生成结合。Milvus 作为向量数据库，可支撑亿级向量检索与毫秒级响应。",
-    chunkId: "chunk-12-003",
-  },
-  {
-    id: "c2",
-    type: "MD",
-    title: "向量数据库选型指南.md",
-    location: "Chunk #42",
-    score: "91%",
-    matchText: "在向量数据库选型中，需要重点关注性能、扩展性、可用性与生态兼容性，Milvus 在企业级场景表现稳定。",
-    chunkId: "chunk-42",
-  },
-  {
-    id: "c3",
-    type: "PDF",
-    title: "Milvus部署实践手册.pdf",
-    location: "第 8 页",
-    score: "89%",
-    matchText: "Milvus 支持分布式集群部署，提供多种存储后端与索引类型，适合长期演进的企业知识库架构。",
-    chunkId: "chunk-8-007",
-  },
+const FEEDBACK_TYPE_OPTIONS = [
+  { value: "issue", label: "问题反馈" },
+  { value: "feature", label: "功能建议" },
+  { value: "other", label: "其他" },
 ];
 
-const INITIAL_HISTORY = [
-  {
-    id: "h1",
-    question: "Milvus 为什么适合企业级 RAG？",
-    answer: DEMO_ANSWER,
-    time: "2026-08-23 14:32",
-    citations: DEMO_CITATIONS,
-  },
-  {
-    id: "h2",
-    question: "生产环境如何配置统一身份认证？",
-    answer: "根据《统一身份认证接入规范》，推荐采用 OIDC + 企业 SSO，并通过 RBAC 映射部门与知识库权限。",
-    time: "2026-08-23 11:18",
-    citations: [],
-  },
-  {
-    id: "h3",
-    question: "如何设计多租户知识隔离？",
-    answer: "建议按租户划分 Milvus Collection / Partition，并在检索层注入 tenant_id 过滤条件，配合 RBAC 控制文档可见范围。",
-    time: "2026-08-22 17:05",
-    citations: [],
-  },
+const RETRIEVAL_TOP_K_OPTIONS = [
+  { value: 3, label: "3" },
+  { value: 5, label: "5" },
+  { value: 10, label: "10" },
+  { value: 20, label: "20" },
 ];
+
+const RETRIEVAL_RERANK_OPTIONS = [
+  { value: "bge-reranker-v2-m3", label: "bge-reranker-v2-m3" },
+  { value: "none", label: "不重排" },
+];
+
+const RETRIEVAL_MODE_OPTIONS = [
+  { value: "hybrid", label: "混合检索" },
+  { value: "dense", label: "稠密向量" },
+  { value: "sparse", label: "稀疏向量" },
+];
+
+const INITIAL_HISTORY = [];
 
 const QUICK_ACTIONS = [
   [MessageCircle, "技术问题", "解答架构、原理与实现等技术问题"],
@@ -75,34 +48,21 @@ const QUICK_ACTIONS = [
   [Clipboard, "文档总结", "提炼文档要点，生成结构化摘要"],
 ];
 
-const INITIAL_USER = {
-  displayName: "张伟",
-  nickname: "张工程师",
-  avatar: "张",
-  email: "zhangwei@company.com",
-  employeeId: "RD-10248",
-  phone: "13800135621",
-  department: "研发部",
-  team: "平台工程组",
-  role: "高级工程师",
-  manager: "李总监",
-  loginMethod: "企业 SSO",
-  lastLogin: "2026-08-23 17:28",
-  joinedAt: "2024-03-15",
-  status: "正常",
-};
-
 function buildWorkspaceUser(apiUser) {
-  if (!apiUser) return INITIAL_USER;
+  if (!apiUser) return null;
   const name = apiUser.nickname || apiUser.username || "用户";
   return {
-    ...INITIAL_USER,
     displayName: name,
     nickname: name,
     avatar: name.slice(0, 1),
-    phone: apiUser.phone || INITIAL_USER.phone,
-    team: apiUser.team || INITIAL_USER.team,
-    department: apiUser.team || INITIAL_USER.department,
+    username: apiUser.username || "—",
+    phone: apiUser.phone || "—",
+    team: apiUser.team || "—",
+    department: apiUser.team || "—",
+    securityLevel: apiUser.security_level || "team",
+    createdAt: apiUser.created_at || "—",
+    loginMethod: "账号密码 / 短信验证码",
+    status: "正常",
   };
 }
 
@@ -251,6 +211,46 @@ function CitationsPanel({ open, citations, onClose }) {
   );
 }
 
+function HeaderPopover({ label, icon: Icon, open, onToggle, onClose, children, badge }) {
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    function handleClick(event) {
+      if (wrapRef.current && !wrapRef.current.contains(event.target)) onClose();
+    }
+    function handleKey(event) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [open, onClose]);
+
+  return (
+    <div className="header-popover-wrap" ref={wrapRef}>
+      <button
+        type="button"
+        className={`header-icon-btn${open ? " active" : ""}`}
+        onClick={onToggle}
+        aria-label={label}
+        aria-expanded={open}
+      >
+        <Icon size={20} />
+        {badge ? <span className="header-icon-badge">{badge}</span> : null}
+      </button>
+      {open ? (
+        <div className="header-popover" role="dialog" aria-label={label}>
+          {children}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function AdminPageShell({ title, desc, action, children, className = "" }) {
   return (
     <section className={`admin-page ${className}`.trim()}>
@@ -268,14 +268,58 @@ function AdminPageShell({ title, desc, action, children, className = "" }) {
 
 function RetrievalPage() {
   const [query, setQuery] = useState("生产环境如何配置统一身份认证？");
-  const [kb, setKb] = useState("安全与合规知识库");
-  const [hasRun, setHasRun] = useState(true);
-  const rewrittenQuery = "生产环境的统一身份认证与权限配置方案";
-  const results = [
-    { score: "0.94", doc: "身份认证接入规范.pdf", type: "PDF", location: "第 18 页", snippet: "OIDC 接入应统一使用企业 IdP，并结合 MFA 与角色映射控制知识库访问权限。" },
-    { score: "0.91", doc: "生产环境部署手册.md", type: "MD", location: "Chunk #42", snippet: "生产环境需启用统一身份认证，并通过 RBAC 控制不同部门对文档与知识库的可见范围。" },
-    { score: "0.88", doc: "研发安全基线.docx", type: "DOC", location: "第 7 页", snippet: "所有研发系统登录必须接入企业 SSO，并保留完整审计日志以满足合规要求。" },
-  ];
+  const [kbs, setKbs] = useState([]);
+  const [selectedKbId, setSelectedKbId] = useState("");
+  const [topK, setTopK] = useState(5);
+  const [mode, setMode] = useState("hybrid");
+  const [useRerank, setUseRerank] = useState(false);
+  const [hasRun, setHasRun] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    knowledgeApi.listBases()
+      .then((data) => {
+        const items = data.items || [];
+        setKbs(items);
+        setSelectedKbId((prev) => prev || items[0]?.id || "");
+      })
+      .catch(() => {});
+  }, []);
+
+  const selectedKb = kbs.find((item) => item.id === selectedKbId) || kbs[0];
+  const kbName = result?.knowledgeBase || selectedKb?.name || "全部知识库";
+  const results = result?.items || [];
+  const rewrittenQuery = result?.rewrittenQuery || query;
+
+  async function runSearch() {
+    const text = query.trim();
+    if (!text || loading) return;
+    setLoading(true);
+    setError("");
+    try {
+      const data = await knowledgeApi.searchRetrieval({
+        question: text,
+        knowledge_base_id: selectedKbId ? Number(selectedKbId) : undefined,
+        top_k: topK,
+        mode,
+        use_rerank: useRerank,
+        use_llm_rewrite: false,
+      });
+      setResult(data);
+      setHasRun(true);
+      if (data.warning) {
+        setError(data.warning);
+      }
+    } catch (err) {
+      setError(err.message);
+      setHasRun(false);
+      setResult(null);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <AdminPageShell
@@ -291,11 +335,6 @@ function RetrievalPage() {
 
       <div className="retrieval-workspace">
         <aside className="retrieval-side admin-card">
-          <header className="retrieval-side-head">
-            <h2>测试输入</h2>
-            <p>模拟用户在问答中的提问，检查知识库召回是否准确。</p>
-          </header>
-
           <label className="retrieval-field">
             <span>测试问题</span>
             <textarea
@@ -308,23 +347,61 @@ function RetrievalPage() {
 
           <label className="retrieval-field">
             <span>目标知识库</span>
-            <select value={kb} onChange={(e) => { setKb(e.target.value); setHasRun(false); }}>
-              <option>安全与合规知识库</option>
-              <option>平台工程知识库</option>
-              <option>研发实践知识库</option>
-            </select>
+            <SelectField
+              className="retrieval-select-field"
+              value={selectedKbId}
+              onChange={(value) => { setSelectedKbId(value); setHasRun(false); }}
+              placeholder="全部知识库"
+              ariaLabel="目标知识库"
+              options={[
+                { value: "", label: "全部知识库" },
+                ...kbs.map((item) => ({
+                  value: item.id,
+                  label: item.name,
+                  hint: `${item.docCount} 篇 · ${item.owner || "未分组"}`,
+                })),
+              ]}
+            />
           </label>
 
-          <dl className="retrieval-params">
-            <div><dt>Top K</dt><dd>20</dd></div>
-            <div><dt>重排模型</dt><dd>bge-reranker-v2-m3</dd></div>
-            <div><dt>检索模式</dt><dd>混合检索</dd></div>
-          </dl>
+          <div className="retrieval-params-form">
+            <label className="retrieval-field">
+              <span>Top K</span>
+              <SelectField
+                className="retrieval-select-field"
+                value={topK}
+                onChange={(value) => { setTopK(Number(value)); setHasRun(false); }}
+                ariaLabel="Top K"
+                options={RETRIEVAL_TOP_K_OPTIONS}
+              />
+            </label>
+            <label className="retrieval-field">
+              <span>重排模型</span>
+              <SelectField
+                className="retrieval-select-field"
+                value={useRerank ? "bge-reranker-v2-m3" : "none"}
+                onChange={(value) => { setUseRerank(value !== "none"); setHasRun(false); }}
+                ariaLabel="重排模型"
+                options={RETRIEVAL_RERANK_OPTIONS}
+              />
+            </label>
+            <label className="retrieval-field">
+              <span>检索模式</span>
+              <SelectField
+                className="retrieval-select-field"
+                value={mode}
+                onChange={(value) => { setMode(value); setHasRun(false); }}
+                ariaLabel="检索模式"
+                options={RETRIEVAL_MODE_OPTIONS}
+              />
+            </label>
+          </div>
 
-          <GlassButton className="feature-primary retrieval-run" onClick={() => setHasRun(true)}>
-            <Search size={17} /> 运行检索
+          <GlassButton className="feature-primary retrieval-run" disabled={loading || !query.trim()} onClick={runSearch}>
+            <Search size={17} /> {loading ? "检索中…" : "运行检索"}
           </GlassButton>
-          <p className="retrieval-side-note">不会生成 AI 回答，仅展示召回片段与相关度分数。</p>
+          {error ? <p className="kb-page-message">{error}</p> : null}
+          <p className="retrieval-side-note">不会生成 AI 回答，仅展示召回片段与相关度分数。低内存环境请将重排设为「不重排」。</p>
         </aside>
 
         <div className="retrieval-main">
@@ -359,12 +436,18 @@ function RetrievalPage() {
                   <div>
                     <span className="retrieval-step-tag">Step 3 · 召回结果</span>
                     <h3>共召回 {results.length} 个相关片段</h3>
+                    {result?.modeLabel ? (
+                      <p className="retrieval-run-meta">
+                        {result.modeLabel} · Top {result.topK ?? topK}
+                        {result.useRerank === false ? " · 未重排" : ` · ${result.reranker}`}
+                      </p>
+                    ) : null}
                   </div>
-                  <span className="retrieval-kb-tag">{kb}</span>
+                  <span className="retrieval-kb-tag">{kbName}</span>
                 </header>
                 <div className="retrieval-result-list">
                   {results.map((item, index) => (
-                    <article className="retrieval-result-card" key={item.doc}>
+                    <article className="retrieval-result-card" key={`${item.chunkId}-${index}`}>
                       <div className="result-rank">#{index + 1}</div>
                       <div className="result-body">
                         <div className="result-head">
@@ -435,8 +518,8 @@ function ProfilePage({ user, onUpdateUser, onOpenSettings, stats }) {
               <h2>{user.displayName}</h2>
               <span className="status-tag ok">{user.status}</span>
             </div>
-            <p className="profile-subtitle">{user.nickname} · {user.role}</p>
-            <p className="profile-meta">{user.department} / {user.team}</p>
+            <p className="profile-subtitle">{user.nickname} · {user.username}</p>
+            <p className="profile-meta">{user.department} / 权限等级 {user.securityLevel}</p>
           </div>
         </div>
         <div className="profile-stats">
@@ -450,20 +533,17 @@ function ProfilePage({ user, onUpdateUser, onOpenSettings, stats }) {
           <header className="profile-card-head"><User size={18} /><h3>基本资料</h3></header>
           <div className="profile-fields">
             <ProfileField label="姓名" value={user.displayName} />
-            <ProfileField label="工号" value={user.employeeId} />
-            <ProfileField label="邮箱" value={user.email} hint="由企业 SSO 同步，不可修改" />
+            <ProfileField label="账号" value={user.username} />
             <ProfileField label="手机号" value={maskPhone(user.phone)} />
-            <ProfileField label="入职日期" value={user.joinedAt} />
+            <ProfileField label="注册时间" value={user.createdAt} />
           </div>
         </section>
 
         <section className="admin-card profile-card">
           <header className="profile-card-head"><Building2 size={18} /><h3>组织信息</h3></header>
           <div className="profile-fields">
-            <ProfileField label="部门" value={user.department} />
-            <ProfileField label="团队" value={user.team} />
-            <ProfileField label="岗位" value={user.role} />
-            <ProfileField label="直属上级" value={user.manager} />
+            <ProfileField label="部门/团队" value={user.team} />
+            <ProfileField label="权限等级" value={user.securityLevel} />
           </div>
         </section>
 
@@ -471,7 +551,6 @@ function ProfilePage({ user, onUpdateUser, onOpenSettings, stats }) {
           <header className="profile-card-head"><KeyRound size={18} /><h3>账号与安全</h3></header>
           <div className="profile-fields">
             <ProfileField label="登录方式" value={user.loginMethod} />
-            <ProfileField label="上次登录" value={user.lastLogin} />
             <ProfileField label="账号状态" value={user.status} />
           </div>
           <footer className="profile-card-foot">
@@ -487,7 +566,7 @@ function ProfilePage({ user, onUpdateUser, onOpenSettings, stats }) {
             <h3>编辑个人资料</h3>
             <label>姓名<input value={form.displayName} onChange={(e) => setForm((prev) => ({ ...prev, displayName: e.target.value }))} /></label>
             <label>手机号<input value={form.phone} onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))} /></label>
-            <p className="admin-note">邮箱与组织信息由企业目录同步，如需变更请联系管理员。</p>
+            <p className="admin-note">昵称与手机号仅本地会话生效；完整资料修改需后端用户接口支持。</p>
             <div className="admin-modal-actions">
               <button type="button" onClick={() => setEditing(false)}>取消</button>
               <GlassButton className="feature-primary" onClick={saveProfile}>保存</GlassButton>
@@ -522,16 +601,111 @@ function Workspace({ onLanding, onLogout }) {
   const [sideOpen, setSideOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
   const [view, setView] = useState("chat");
+  const [chunkNav, setChunkNav] = useState({ kbId: "", docId: "" });
   const [copied, setCopied] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarSearchOpen, setSidebarSearchOpen] = useState(false);
   const [sidebarQuery, setSidebarQuery] = useState("");
-  const [user, setUser] = useState(() => buildWorkspaceUser(getStoredUser()));
-  const [activeCitations, setActiveCitations] = useState(DEMO_CITATIONS);
+  const [user, setUser] = useState(() => buildWorkspaceUser(getStoredUser()) || {
+    displayName: "用户", nickname: "用户", avatar: "用", username: "—", phone: "—",
+    team: "—", department: "—", securityLevel: "team", createdAt: "—", loginMethod: "—", status: "正常",
+  });
+  const [activeCitations, setActiveCitations] = useState([]);
   const [kbs, setKbs] = useState([]);
   const [history, setHistory] = useState(INITIAL_HISTORY);
   const [hasConversation, setHasConversation] = useState(false);
+  const [notifyOpen, setNotifyOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackType, setFeedbackType] = useState("issue");
+  const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackContact, setFeedbackContact] = useState("");
+  const [feedbackSending, setFeedbackSending] = useState(false);
+  const [feedbackDone, setFeedbackDone] = useState(false);
+  const composerRef = useRef(null);
+
+  const notifications = useMemo(() => {
+    const items = [];
+    if (kbs.length === 0) {
+      items.push({
+        id: "no-kb",
+        title: "尚未接入知识库",
+        body: "上传企业文档后，问答才能基于真实内容检索与引用。",
+        meta: "请由管理员或团队成员创建知识库并上传文档。",
+        actionLabel: "前往知识库",
+        onAction: () => switchView("knowledge"),
+      });
+    } else {
+      kbs.forEach((kb) => {
+        const creatorLine = `创建人：${kb.createdBy || "系统预置"}${kb.createdAt ? ` · ${kb.createdAt}` : ""}`;
+        if (!kb.docCount) {
+          items.push({
+            id: `empty-${kb.id}`,
+            title: `${kb.name} 暂无文档`,
+            body: "该知识库还没有上传任何文件，检索与问答暂时无法命中相关内容。",
+            meta: `${creatorLine} · 负责团队：${kb.owner || "未分配"}`,
+            actionLabel: "上传文档",
+            onAction: () => switchView("knowledge"),
+          });
+        } else if (kb.lastUploader) {
+          items.push({
+            id: `active-${kb.id}`,
+            title: `${kb.name} · ${kb.docCount} 篇文档`,
+            body: "知识库已有文档，可正常用于检索与问答。",
+            meta: `${creatorLine} · 最后上传：${kb.lastUploader}${kb.lastUploadedAt ? ` · ${kb.lastUploadedAt}` : ""}`,
+            actionLabel: "查看文档",
+            onAction: () => switchView("knowledge"),
+          });
+        }
+      });
+    }
+    if (working) {
+      items.unshift({
+        id: "rag-running",
+        title: "正在检索知识库",
+        body: "系统正在执行召回、重排与生成，完成后可在右侧查看引用来源。",
+      });
+    }
+    if (items.length === 0) {
+      items.push({
+        id: "all-good",
+        title: "暂无待处理事项",
+        body: `已连接 ${kbs.length} 个知识库，系统运行正常。`,
+      });
+    }
+    return items;
+  }, [kbs, working]);
+
+  function closeHeaderMenus() {
+    setNotifyOpen(false);
+    setFeedbackOpen(false);
+  }
+
+  async function submitFeedback(event) {
+    event.preventDefault();
+    if (!feedbackText.trim() || feedbackSending) return;
+    setFeedbackSending(true);
+    try {
+      // 预留接口：POST /api/feedback
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setFeedbackDone(true);
+      setFeedbackText("");
+      setFeedbackContact("");
+      setTimeout(() => {
+        setFeedbackDone(false);
+        closeHeaderMenus();
+      }, 1400);
+    } finally {
+      setFeedbackSending(false);
+    }
+  }
+
+  useEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+  }, [prompt]);
 
   useEffect(() => {
     authApi.me()
@@ -552,13 +726,16 @@ function Workspace({ onLanding, onLogout }) {
     onLogout();
   }
 
-  function switchView(next) {
+  function switchView(next, payload) {
+    if (payload?.kbId || payload?.docId) {
+      setChunkNav({ kbId: payload.kbId || "", docId: payload.docId || "" });
+    }
     setView(next);
     setSourceOpen(false);
     setSideOpen(false);
   }
 
-  function ask(questionText) {
+  async function ask(questionText) {
     const text = (questionText ?? prompt).trim();
     if (!text || working) return;
     setPrompt(text);
@@ -568,24 +745,77 @@ function Workspace({ onLanding, onLogout }) {
     setStage(0);
     setStream("");
     setSourceOpen(false);
-    setActiveCitations(text.includes("Milvus") ? DEMO_CITATIONS : []);
-    [0, 1, 2, 3, 4, 5].forEach((value, index) => setTimeout(() => setStage(value), index * 550));
-    setTimeout(() => {
-      let i = 0;
-      const timer = setInterval(() => {
-        i += 8;
-        setStream(DEMO_ANSWER.slice(0, i));
-        if (i >= DEMO_ANSWER.length) {
-          clearInterval(timer);
-          setWorking(false);
-          setHistory((prev) => {
-            const exists = prev.find((h) => h.question === text);
-            if (exists) return prev.map((h) => (h.question === text ? { ...h, answer: DEMO_ANSWER, time: "刚刚" } : h));
-            return [{ id: `h${Date.now()}`, question: text, answer: DEMO_ANSWER, time: "刚刚", citations: DEMO_CITATIONS }, ...prev];
-          });
+    setActiveCitations([]);
+    const stageTimers = [0, 1, 2, 3, 4, 5].map((value, index) => setTimeout(() => setStage(value), index * 400));
+    try {
+      let data = null;
+      try {
+        data = await faqApi.search(text);
+      } catch (faqError) {
+        // FAQ 接口失败时仍尝试向量检索，避免后端瞬时抖动导致整页报错
+        data = { found: false };
+      }
+      let answer;
+      let citations = [];
+      if (data.found) {
+        answer = data.answer;
+        if (data.source) {
+          citations = [{
+            id: `faq-${Date.now()}`,
+            type: "FAQ",
+            title: data.source,
+            location: data.category || "高频问答",
+            score: data.cached ? "缓存命中" : "精确匹配",
+            matchText: data.answer?.slice(0, 120) || "",
+            chunkId: `faq-${data.team || "default"}`,
+          }];
         }
-      }, 23);
-    }, 3000);
+      } else {
+        try {
+          const retrieval = await knowledgeApi.searchRetrieval({
+            question: text,
+            top_k: 5,
+            use_rerank: false,
+            use_llm_rewrite: false,
+          });
+          if (retrieval.items?.length) {
+            answer = `根据知识库检索到 ${retrieval.total} 个相关片段：\n\n${retrieval.items.map((item, index) => `${index + 1}. ${item.snippet}`).join("\n\n")}`;
+            citations = retrieval.items.map((item, index) => ({
+              id: `retrieval-${index}`,
+              type: item.type,
+              title: item.doc,
+              location: item.location,
+              score: item.score,
+              matchText: item.snippet,
+              chunkId: item.chunkId,
+            }));
+          } else {
+            answer = data.message || "暂未在 FAQ 与向量库中找到匹配内容，请尝试换个问法或在知识库上传更多文档。";
+          }
+        } catch (retrievalError) {
+          if (!data) throw retrievalError;
+          answer = data.message || "暂未在 FAQ 中找到匹配内容；向量检索暂时不可用，请稍后重试。";
+        }
+      }
+      if (!answer) {
+        throw new Error("暂未找到匹配内容，请稍后重试或换个问法。");
+      }
+      setStream(answer);
+      setActiveCitations(citations);
+      setHistory((prev) => {
+        const exists = prev.find((h) => h.question === text);
+        const record = { id: `h${Date.now()}`, question: text, answer, time: "刚刚", citations };
+        if (exists) return prev.map((h) => (h.question === text ? { ...h, answer, time: "刚刚", citations } : h));
+        return [record, ...prev];
+      });
+    } catch (err) {
+      setStream(`查询失败：${err.message}`);
+      setActiveCitations([]);
+    } finally {
+      stageTimers.forEach(clearTimeout);
+      setStage(5);
+      setWorking(false);
+    }
   }
 
   function openFromRecord(record) {
@@ -751,7 +981,94 @@ function Workspace({ onLanding, onLogout }) {
                     <PanelRight />
                   </button>
                 )}
-                <Bell /><CircleHelp />
+                <HeaderPopover
+                  label="通知"
+                  icon={Bell}
+                  open={notifyOpen}
+                  badge={notifications.filter((item) => item.actionLabel).length || undefined}
+                  onToggle={() => {
+                    setNotifyOpen((value) => !value);
+                    setFeedbackOpen(false);
+                  }}
+                  onClose={closeHeaderMenus}
+                >
+                  <div className="header-popover-head">
+                    <h3>通知</h3>
+                    <span>{notifications.length} 条</span>
+                  </div>
+                  <ul className="notify-list">
+                    {notifications.map((item) => (
+                      <li key={item.id}>
+                        <div>
+                          <strong>{item.title}</strong>
+                          <p>{item.body}</p>
+                          {item.meta ? <span className="notify-meta">{item.meta}</span> : null}
+                        </div>
+                        {item.actionLabel ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              item.onAction?.();
+                              closeHeaderMenus();
+                            }}
+                          >
+                            {item.actionLabel}
+                          </button>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </HeaderPopover>
+                <HeaderPopover
+                  label="反馈"
+                  icon={MessageSquare}
+                  open={feedbackOpen}
+                  onToggle={() => {
+                    setFeedbackOpen((value) => !value);
+                    setNotifyOpen(false);
+                  }}
+                  onClose={closeHeaderMenus}
+                >
+                  <div className="header-popover-head">
+                    <h3>意见反馈</h3>
+                  </div>
+                  {feedbackDone ? (
+                    <p className="feedback-success">感谢反馈，我们已收到你的意见。</p>
+                  ) : (
+                    <form className="feedback-form" onSubmit={submitFeedback}>
+                      <label>
+                        反馈类型
+                        <SelectField
+                          value={feedbackType}
+                          onChange={setFeedbackType}
+                          options={FEEDBACK_TYPE_OPTIONS}
+                          ariaLabel="反馈类型"
+                        />
+                      </label>
+                      <label>
+                        详细描述
+                        <textarea
+                          value={feedbackText}
+                          onChange={(e) => setFeedbackText(e.target.value)}
+                          placeholder="请描述你遇到的问题或改进建议…"
+                          rows={4}
+                          required
+                        />
+                      </label>
+                      <label>
+                        联系方式（选填）
+                        <input
+                          value={feedbackContact}
+                          onChange={(e) => setFeedbackContact(e.target.value)}
+                          placeholder="邮箱或手机号，便于跟进"
+                        />
+                      </label>
+                      <button type="submit" className="feedback-submit" disabled={!feedbackText.trim() || feedbackSending}>
+                        {feedbackSending ? "提交中…" : "提交反馈"}
+                      </button>
+                    </form>
+                  )}
+                </HeaderPopover>
               </div>
             </header>
 
@@ -809,6 +1126,7 @@ function Workspace({ onLanding, onLogout }) {
               <div className="chat-composer">
                 <div className="composer-shell">
                   <textarea
+                    ref={composerRef}
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     onKeyDown={(e) => {
@@ -821,16 +1139,36 @@ function Workspace({ onLanding, onLogout }) {
                     aria-label={hasConversation ? "追问" : "技术问题"}
                     rows={1}
                   />
-                  <button type="button" className="composer-send" onClick={() => ask()} aria-label="发送">
-                    <Send size={18} />
-                  </button>
+                  <div className="composer-toolbar">
+                    <button type="button" className="composer-tool" aria-label="添加附件">
+                      <Plus size={18} />
+                    </button>
+                    <div className="composer-toolbar-right">
+                      <button
+                        type="button"
+                        className={`composer-send${prompt.trim() && !working ? " ready" : ""}`}
+                        onClick={() => ask()}
+                        disabled={!prompt.trim() || working}
+                        aria-label="发送"
+                      >
+                        <ArrowUp size={18} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </>
         ) : (
           <>
-            {view === "knowledge" && <KnowledgeAdmin />}
+            {view === "knowledge" && (
+              <KnowledgeAdmin
+                onViewChunks={(kbId, docId) => switchView("chunks", { kbId, docId })}
+              />
+            )}
+            {view === "chunks" && (
+              <ChunkViewer initialKbId={chunkNav.kbId} initialDocId={chunkNav.docId} />
+            )}
             {view === "retrieval" && <RetrievalPage />}
             {view === "profile" && (
               <ProfilePage
@@ -908,142 +1246,6 @@ function Landing({ onEnter, onLogin }) {
   );
 }
 
-function Login({ onSuccess }) {
-  const [show, setShow] = useState(false);
-  const [account, setAccount] = useState("");
-  const [password, setPassword] = useState("");
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [remember, setRemember] = useState(false);
-  const [error, setError] = useState("");
-  const [method, setMethod] = useState("password");
-  const [mode, setMode] = useState("login");
-  const [codeSent, setCodeSent] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [debugCode, setDebugCode] = useState("");
-
-  const isRegister = mode === "register";
-
-  async function submit(e) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      let data;
-      if (isRegister) {
-        if (!account.trim() || !password || !phone.trim() || !code.trim()) {
-          setError("请填写用户名、密码、手机号和验证码");
-          return;
-        }
-        data = await authApi.register({
-          username: account.trim(),
-          password,
-          phone: phone.trim(),
-          sms_code: code.trim(),
-        });
-      } else if (method === "password") {
-        if (!account.trim() || !password) {
-          setError("请输入账号和密码");
-          return;
-        }
-        data = await authApi.login(account.trim(), password);
-      } else {
-        if (!phone.trim() || !code.trim()) {
-          setError("请输入手机号和验证码");
-          return;
-        }
-        data = await authApi.smsLogin(phone.trim(), code.trim());
-      }
-      setAuth(data.access_token, data.user);
-      onSuccess(data.user);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const switchMethod = () => { setMethod((v) => (v === "password" ? "phone" : "password")); setError(""); setCodeSent(false); setDebugCode(""); };
-
-  async function sendCode() {
-    if (!phone.trim()) { setError("请先输入手机号"); return; }
-    setError("");
-    try {
-      const data = await authApi.sendCode(phone.trim());
-      setCodeSent(true);
-      if (data.debug_code) setDebugCode(data.debug_code);
-    } catch (err) {
-      setError(err.message);
-    }
-  }
-
-  return (
-    <main className="login-page">
-      <section className="login-box">
-        <div className="login-brand">
-          <h1 className="login-brand-title">
-            <svg className="login-brand-icon" viewBox="0 0 64 56" aria-hidden="true">
-              <path d="M32 8 13 43M32 8l19 35M13 43h38" />
-              <circle cx="32" cy="8" r="7" />
-              <circle cx="13" cy="43" r="6" />
-              <circle cx="51" cy="43" r="6" />
-              <circle className="logo-dot" cx="32" cy="8" r="2.5" />
-            </svg>
-            <span>
-              {isRegister ? "注册 DevMind AI" : "登录 DevMind AI"}
-              <small>INTELLIGENT DEV PARTNER</small>
-            </span>
-          </h1>
-        </div>
-        <form onSubmit={submit}>
-          {isRegister ? (
-            <>
-              <label>用户名<input value={account} onChange={(e) => setAccount(e.target.value)} placeholder="请输入用户名" autoComplete="username" /></label>
-              <label>密码<span className="password-field"><input value={password} onChange={(e) => setPassword(e.target.value)} type={show ? "text" : "password"} placeholder="请输入密码" autoComplete="new-password" /><button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? "隐藏密码" : "显示密码"}>{show ? <EyeOff /> : <Eye />}</button></span></label>
-              <label>手机号<input value={phone} onChange={(e) => { setPhone(e.target.value); setCodeSent(false); setDebugCode(""); }} placeholder="请输入手机号" inputMode="tel" autoComplete="tel" /></label>
-              <label>验证码<span className="code-field"><input value={code} onChange={(e) => setCode(e.target.value)} placeholder="请输入验证码" inputMode="numeric" autoComplete="one-time-code" /><button type="button" onClick={sendCode}>{codeSent ? "已发送" : "获取验证码"}</button></span></label>
-              {debugCode ? <p className="login-debug">开发环境验证码：{debugCode}</p> : null}
-            </>
-          ) : method === "password" ? (
-            <>
-              <label>账号 / 邮箱<input value={account} onChange={(e) => setAccount(e.target.value)} placeholder="请输入账号或企业邮箱" autoComplete="username" /></label>
-              <label>密码<span className="password-field"><input value={password} onChange={(e) => setPassword(e.target.value)} type={show ? "text" : "password"} placeholder="请输入密码" autoComplete="current-password" /><button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? "隐藏密码" : "显示密码"}>{show ? <EyeOff /> : <Eye />}</button></span></label>
-            </>
-          ) : (
-            <>
-              <label>手机号<input value={phone} onChange={(e) => { setPhone(e.target.value); setCodeSent(false); setDebugCode(""); }} placeholder="请输入手机号" inputMode="tel" autoComplete="tel" /></label>
-              <label>验证码<span className="code-field"><input value={code} onChange={(e) => setCode(e.target.value)} placeholder="请输入验证码" inputMode="numeric" autoComplete="one-time-code" /><button type="button" onClick={sendCode}>{codeSent ? "已发送" : "获取验证码"}</button></span></label>
-              {debugCode ? <p className="login-debug">开发环境验证码：{debugCode}</p> : null}
-            </>
-          )}
-          {error && <p className="login-error">{error}</p>}
-          {!isRegister && <div className="login-options"><label><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />记住登录状态</label><button type="button">忘记密码？</button></div>}
-          {isRegister && <p className="register-note">注册即表示你同意 <a>用户协议</a> 与 <a>隐私政策</a></p>}
-          <button className="login-submit" type="submit" disabled={loading}>{loading ? "处理中…" : isRegister ? "注册并进入" : "登录"} <ArrowRight /></button>
-        </form>
-        {import.meta.env.DEV && !isRegister && method === "password" && (
-          <p className="login-dev-hint">开发测试账号：admin / 123456（此前 Mock 登录不校验密码，现已接入真实鉴权）</p>
-        )}
-        <div className="login-switch">
-          <span>{isRegister ? "已有账号？" : "还没有账号？"}</span>
-          <button type="button" onClick={() => { setMode(isRegister ? "login" : "register"); setError(""); setDebugCode(""); }}>
-            {isRegister ? "登录" : "注册账号"}
-          </button>
-        </div>
-        {!isRegister && (
-          <div className="login-alt">
-            <div className="login-divider"><span>其他登录方式</span></div>
-            <button type="button" className="login-alt-btn" onClick={switchMethod}>
-              {method === "password" ? "手机验证码登录" : "账号密码登录"}
-            </button>
-          </div>
-        )}
-      </section>
-      <footer className="login-footer">© 2026 DevMind AI　 <a>隐私政策</a> · <a>用户协议</a></footer>
-    </main>
-  );
-}
-
 function useRoute() {
   const [path, setPath] = useState(() => location.pathname);
   useEffect(() => {
@@ -1070,7 +1272,15 @@ export default function App() {
     }
   }, [path, authReady, navigate]);
 
-  if (path === "/login") return <Login onSuccess={() => navigate("/workspace")} />;
+  if (path === "/login") {
+    return <LoginPage onSuccess={() => navigate("/workspace")} onNavigate={navigate} />;
+  }
+  if (path === "/terms") {
+    return <LegalPage type="terms" onBack={() => navigate("/login")} />;
+  }
+  if (path === "/privacy") {
+    return <LegalPage type="privacy" onBack={() => navigate("/login")} />;
+  }
   if (path === "/workspace") {
     if (!getToken()) return null;
     return (

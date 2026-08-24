@@ -1,6 +1,8 @@
 """用户服务：短信验证码、注册、登录、用户信息。"""
 import asyncio
+import logging
 import random
+import secrets
 
 from fastapi import HTTPException
 from pymysql.err import IntegrityError
@@ -8,26 +10,38 @@ from pymysql.err import IntegrityError
 from backend.app.core.config import settings
 from backend.app.core.db import db
 from backend.app.core.security import hash_password, verify_password
+from backend.app.services import sms_service
+
+logger = logging.getLogger("devmind.user")
 
 _SMS_CODE_PREFIX = "sms:code:"
 _SMS_RATE_PREFIX = "sms:rate:"
 
 
 async def send_sms_code(phone: str) -> dict:
-    """发送手机验证码（开发环境直接返回 debug_code）。"""
-    # 1. 频率限制：同一手机号 60 秒内只能发一次
+    """发送手机验证码。"""
     rate_key = f"{_SMS_RATE_PREFIX}{phone}"
     if not await db.redis_sms.set(rate_key, "1", ex=settings.SMS_SEND_INTERVAL, nx=True):
         raise HTTPException(status_code=429, detail="验证码发送过于频繁，请稍后再试")
 
-    # 2. 生成 6 位验证码
     code = str(random.randint(100000, 999999))
-    await db.redis_sms.set(f"{_SMS_CODE_PREFIX}{phone}", code, ex=settings.SMS_CODE_TTL)
+    code_key = f"{_SMS_CODE_PREFIX}{phone}"
+    try:
+        await sms_service.send_verification_code(phone, code)
+    except Exception:
+        await db.redis_sms.delete(rate_key)
+        raise
 
-    # 3. 实际项目在这里调用短信服务商 API
-    # TODO: 接入阿里云/腾讯云短信，生产环境不要返回 debug_code
-    result = {"message": "验证码已发送", "expire_seconds": settings.SMS_CODE_TTL}
-    if settings.APP_DEBUG:
+    await db.redis_sms.set(code_key, code, ex=settings.SMS_CODE_TTL)
+    logger.info("SMS code stored phone=%s***%s", phone[:3], phone[-4:])
+
+    result = {
+        "message": "验证码已发送",
+        "expire_seconds": settings.SMS_CODE_TTL,
+        "send_interval": settings.SMS_SEND_INTERVAL,
+    }
+    # 未启用真实短信时返回 debug_code，便于本地完成验证码登录联调
+    if not settings.SPUG_SMS_ENABLED:
         result["debug_code"] = code
     return result
 
@@ -85,15 +99,39 @@ async def login_by_account(account: str, password: str) -> dict:
 
 
 async def login_by_sms(phone: str, sms_code: str) -> dict:
-    """手机号验证码登录。"""
+    """手机号验证码登录；未注册手机号自动创建账号。"""
     await verify_sms_code(phone, sms_code)
     user = await db.fetch_one("SELECT * FROM users WHERE phone=%s LIMIT 1", (phone,))
     if not user:
-        raise HTTPException(status_code=400, detail="该手机号未注册")
+        user = await _auto_register_by_phone(phone)
     if not user["is_active"]:
         raise HTTPException(status_code=403, detail="账号已被禁用")
 
     return _public_user(user)
+
+
+async def _auto_register_by_phone(phone: str) -> dict:
+    """验证码登录时，为未注册手机号自动建号。"""
+    username = f"u{phone}"
+    nickname = f"用户{phone[-4:]}"
+    password_hash = await asyncio.to_thread(hash_password, secrets.token_urlsafe(16))
+    try:
+        user_id = await db.execute_lastrowid(
+            """INSERT INTO users (username, password_hash, nickname, phone, team, security_level)
+               VALUES (%s, %s, %s, %s, 'default', 'team')""",
+            (username, password_hash, nickname, phone),
+        )
+    except IntegrityError:
+        user = await db.fetch_one("SELECT * FROM users WHERE phone=%s LIMIT 1", (phone,))
+        if user:
+            return user
+        raise HTTPException(status_code=400, detail="自动注册失败，请稍后重试")
+
+    logger.info("Auto registered user phone=%s***%s user_id=%s", phone[:3], phone[-4:], user_id)
+    user = await db.fetch_one("SELECT * FROM users WHERE id=%s LIMIT 1", (user_id,))
+    if not user:
+        raise HTTPException(status_code=500, detail="自动注册失败，请稍后重试")
+    return user
 
 
 def _public_user(user: dict) -> dict:

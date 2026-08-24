@@ -69,3 +69,19 @@ class KnowledgeBaseUpdate(BaseModel):
 
 class DocumentUpdate(BaseModel):
     file_name: str = Field(min_length=1, max_length=500)
+
+
+class OssUploadInitRequest(BaseModel):
+    knowledge_base_id: int
+    file_name: str = Field(min_length=1, max_length=500)
+    file_size: int = Field(ge=1, le=200 * 1024 * 1024)
+    content_type: str | None = Field(default=None, max_length=200)
+
+
+class RetrievalSearchRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=1000)
+    knowledge_base_id: int | None = None
+    top_k: int = Field(default=5, ge=1, le=20)
+    mode: str = Field(default="hybrid", pattern="^(hybrid|dense|sparse)$")
+    use_rerank: bool = False
+    use_llm_rewrite: bool = False
