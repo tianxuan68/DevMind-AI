@@ -546,6 +546,9 @@ class IntegratedQASystem:
         return "该问题已转人工处理，我们会尽快联系您，请耐心等待。", True
 
 
+
+
+
 def create_system() -> IntegratedQASystem:
     """应用级单例入口（app.py lifespan 调用）。"""
     return IntegratedQASystem()
