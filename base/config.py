@@ -48,9 +48,20 @@ class Config:
         self.RERANK_TOP_K = self.config.getint("retrieval", "rerank_top_k", fallback=3)
         self.CANDIDATE_M = self.config.getint("retrieval", "candidate_m", fallback=3)
         self.CONFIDENCE_THRESHOLD = self.config.getfloat("retrieval", "confidence_threshold", fallback=0.75)
+        self.ANSWER_CACHE_TTL = self.config.getint("retrieval", "answer_cache_ttl", fallback=3600)
 
         self.APP_PORT = self.config.getint("app", "port", fallback=8003)
         self.VALID_SOURCES = ast.literal_eval(
             self.config.get("app", "valid_sources", fallback='["infra", "backend", "frontend", "data", "ops"]')
         )
         self.LOG_FILE = self.config.get("logger", "log_file", fallback="logs/app.log")
+
+        self.SSO_MODE = self.config.get("security", "sso_mode", fallback="mock")
+        self.SSO_TOKEN_HEADER = self.config.get("security", "sso_token_header", fallback="Authorization")
+        self.SSO_SECRET = self.config.get("security", "sso_secret", fallback="devmind-ai-sso-secret")
+        self.DEFAULT_SECURITY_LEVEL = self.config.get("security", "default_security_level", fallback="team")
+
+        self.TICKET_ENABLED = self.config.getboolean("ticket", "enabled", fallback=True)
+        self.TICKET_EXTERNAL_ENABLED = self.config.getboolean("ticket", "external_enabled", fallback=False)
+        self.TICKET_EXTERNAL_API_URL = self.config.get("ticket", "external_api_url", fallback="")
+        self.TICKET_QUEUE_KEY = self.config.get("ticket", "queue_key", fallback="ticket:queue")
