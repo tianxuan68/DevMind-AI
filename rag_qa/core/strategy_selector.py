@@ -1,6 +1,6 @@
 """T13 Advanced RAG 检索策略选择器（基线参考 + 企业内部技术知识库场景）。
 
-在技术咨询分支内，根据用户问题选择四种检索增强策略之一：
+在需要检索的意图分支内（技术咨询 / 权限申请 / 故障上报），根据用户问题选择四种检索增强策略之一：
     直接检索 / 假设问题检索(HyDE) / 子查询检索 / 回溯问题检索
 
 参考：E:/study_project/Itcast_qa_system/rag_qa/core/strategy_selector.py

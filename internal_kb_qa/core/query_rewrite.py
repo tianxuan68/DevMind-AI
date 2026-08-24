@@ -13,9 +13,25 @@ from openai import OpenAI
 
 from base.config import Config
 from base.logger import logger
-from internal_kb_qa.core.intent_classifier import CATEGORY_GENERAL, CATEGORY_TECH
+from internal_kb_qa.core.intent_classifier import (
+    CATEGORY_ACCESS_REQUEST,
+    CATEGORY_COMMON,
+    CATEGORY_COMPLAINT_SUGGESTION,
+    CATEGORY_INCIDENT,
+    CATEGORY_POLICY_GENERAL,
+    CATEGORY_TECH,
+    CATEGORY_TICKET_INQUIRY,
+)
 from internal_kb_qa.core.prompts import RAGPrompts
 from rag_qa.core.strategy_selector import StrategySelector
+
+# 不进入检索的类别（直接 LLM 或转人工）
+_NO_SEARCH_CATEGORIES = frozenset({
+    CATEGORY_TICKET_INQUIRY,
+    CATEGORY_COMPLAINT_SUGGESTION,
+    CATEGORY_POLICY_GENERAL,
+    CATEGORY_COMMON,
+})
 
 _COLLOQUIAL_MAP = {
     "挂了": "服务不可用",
@@ -142,7 +158,7 @@ def query_rewrite(
     advanced_strategy: str | None = None,
 ) -> RewrittenQuery:
     """Query 改写：结合 T6 意图 + Advanced 检索策略，输出用于混合检索的 query 列表。"""
-    if category == CATEGORY_GENERAL:
+    if category in _NO_SEARCH_CATEGORIES:
         return RewrittenQuery(rewritten_query=query, search_queries=[])
 
     if advanced_strategy is None:
@@ -189,9 +205,11 @@ def _main() -> None:
         print(f"  rewritten_query:   {rw.rewritten_query}")
         print(f"  search_queries:    {rw.search_queries}")
 
-    rw_general = query_rewrite("什么是 Kubernetes？", category=CATEGORY_GENERAL)
-    assert rw_general.search_queries == [], "通用知识不应产生检索 query"
-    print("\n通用知识 search_queries=[] -> PASS")
+    for no_search_category in (CATEGORY_POLICY_GENERAL, CATEGORY_COMMON, CATEGORY_TICKET_INQUIRY, CATEGORY_COMPLAINT_SUGGESTION):
+        rw = query_rewrite("今天天气怎么样？", category=no_search_category)
+        assert rw.search_queries == [], f"{no_search_category} 不应产生检索 query"
+        print(f"\n{no_search_category} search_queries=[] -> PASS")
+
     print("\nT13 query_rewrite: 本地测试完成")
 
 
