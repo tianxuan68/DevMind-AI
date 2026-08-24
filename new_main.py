@@ -63,6 +63,12 @@ RULE_CATEGORY_PATTERNS = {
 # 投诉关键词（complaint_suggestion 类内细分）：命中按投诉转人工建单，否则按建议致谢
 COMPLAINT_KEYWORDS = ("投诉", "差评", "不满意", "太差", "垃圾", "吐槽")
 
+# T6 二类中文标签 → T8 路由英文 slug（不改动 intent_classifier 契约）
+_T6_CATEGORY_TO_ROUTE = {
+    "技术咨询": "tech",
+    "通用知识": "policy_general",
+}
+
 ACCESS_REQUEST_REPLY = (
     "权限/账号申请请走内部审批流程：联系您的直属主管或系统管理员提交权限申请工单。"
 )
@@ -123,15 +129,38 @@ class IntegratedQASystem:
     # ---- 意图分类（T6 优先，规则降级） ----
 
     def _classify(self, query: str) -> dict:
-        """返回 {category, confidence}；T6 未接入时用规则降级。"""
+        """返回 {category, confidence}；T6 未接入时用规则降级。
+
+        细粒度意图（闲聊/故障/投诉/权限/工单）优先走规则，保证 T8 七类路由；
+        规则落在 tech 时再调用 T6 二分类，将「通用知识」映射为 policy_general。
+        """
+        rule = self._rule_classify(query)
+        if rule["category"] != "tech":
+            return rule
+
         if self.classify is not None:
             try:
                 result = self.classify(query)
-                if result and result.get("category"):
-                    return result
+                category, confidence = self._normalize_classification(result)
+                if category:
+                    mapped = _T6_CATEGORY_TO_ROUTE.get(category, category)
+                    return {"category": mapped, "confidence": confidence}
             except Exception as e:
                 logger.error("T6 classify 调用失败: %s", e)
-        return self._rule_classify(query)
+        return rule
+
+    @staticmethod
+    def _normalize_classification(result) -> tuple[str, float]:
+        """兼容 Classification 对象与 dict。"""
+        if result is None:
+            return "", 0.0
+        if hasattr(result, "category"):
+            return str(getattr(result, "category", "") or ""), float(
+                getattr(result, "confidence", 0.6) or 0.6
+            )
+        if isinstance(result, dict):
+            return str(result.get("category") or ""), float(result.get("confidence") or 0.6)
+        return "", 0.0
 
     def _rule_classify(self, query: str) -> dict:
         """七类降级分类（T6 交付前使用）。
@@ -375,13 +404,24 @@ class IntegratedQASystem:
                 hit = self.faq_match(query)
                 if hit:
                     logger.info("FAQ 命中: %s", query)
-                    return hit
+                    return self._faq_hit_to_dict(hit)
             except Exception as e:
                 logger.error("T5 faq_match 调用失败: %s", e)
         cached = self.redis.get_answer(query)
         if cached:
             return {"answer": cached, "source": "", "score": 1.0}
         return None
+
+    @staticmethod
+    def _faq_hit_to_dict(hit) -> dict:
+        """兼容 FAQHit dataclass 与 dict。"""
+        if isinstance(hit, dict):
+            return hit
+        return {
+            "answer": getattr(hit, "answer", "") or "",
+            "source": getattr(hit, "source", "") or "",
+            "score": float(getattr(hit, "score", 1.0) or 1.0),
+        }
 
     def _ticket_inquiry_reply(self, user: UserContext) -> str:
         """工单/进度查询：返回用户最近工单状态；无工单时引导转人工。"""
@@ -459,13 +499,41 @@ class IntegratedQASystem:
         except TypeError:
             logger.warning("T7 rag_answer 未接受 filter 参数，检索未注入权限过滤")
             result = self.rag_answer(query, history, category)
-        result = result or {}
-        answer = result.get("answer", "")
-        sources = result.get("sources", [])
-        confidence = result.get("confidence", 0.0)
+        answer, sources, confidence = self._normalize_rag_result(result)
         if stream_tokens and answer:
             yield {"type": "token", "token": answer}
         yield {"type": "end", "sources": sources, "confidence": confidence}
+
+    @staticmethod
+    def _normalize_rag_result(result) -> tuple[str, list, float]:
+        """兼容 RAGResult dataclass 与 dict。"""
+        if result is None:
+            return "", [], 0.0
+        if hasattr(result, "answer"):
+            raw_sources = getattr(result, "sources", None) or []
+            sources = []
+            for src in raw_sources:
+                if isinstance(src, dict):
+                    sources.append(src)
+                else:
+                    sources.append({
+                        "title": getattr(src, "title", "") or "",
+                        "page": getattr(src, "page", None),
+                        "score": float(getattr(src, "score", 0.0) or 0.0),
+                        "text": getattr(src, "text", "") or "",
+                    })
+            return (
+                getattr(result, "answer", "") or "",
+                sources,
+                float(getattr(result, "confidence", 0.0) or 0.0),
+            )
+        if isinstance(result, dict):
+            return (
+                result.get("answer", "") or "",
+                result.get("sources", []) or [],
+                float(result.get("confidence", 0.0) or 0.0),
+            )
+        return "", [], 0.0
 
     def _human_fallback(
         self, query: str, session_id: str, user: UserContext, reason: str

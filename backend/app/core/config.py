@@ -36,8 +36,11 @@ class Settings:
         self.REDIS_QUESTION_DB = int(os.getenv("REDIS_QUESTION_DB", "2"))
         self.REDIS_TOKEN_DB = int(os.getenv("REDIS_TOKEN_DB", "3"))
 
-        # JWT / 安全
-        self.JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me")
+        # JWT / 安全（与 T8 SSO_SECRET 对齐：优先 JWT_SECRET，否则读 config.ini sso_secret）
+        self.JWT_SECRET = os.getenv(
+            "JWT_SECRET",
+            parser.get("security", "sso_secret", fallback="devmind-ai-sso-secret"),
+        )
         self.JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
         self.JWT_EXPIRE_HOURS = int(os.getenv("JWT_EXPIRE_HOURS", "168"))
         self.SMS_CODE_TTL = int(os.getenv("SMS_CODE_TTL", "300"))

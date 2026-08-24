@@ -13,8 +13,20 @@ import SelectField from "./components/SelectField";
 import LoginPage from "./components/LoginPage";
 import LegalPage from "./components/LegalPage";
 import {
-  authApi, clearAuth, faqApi, getStoredUser, getToken, knowledgeApi, setUnauthorizedHandler,
+  authApi, chatApi, clearAuth, getStoredUser, getToken, knowledgeApi, setUnauthorizedHandler,
 } from "./api/qa";
+
+function sourcesToCitations(sources) {
+  return (sources || []).map((item, index) => ({
+    id: `src-${Date.now()}-${index}`,
+    type: "DOC",
+    title: item.title || "未知文档",
+    location: item.page != null ? `第 ${item.page} 页` : "知识库引用",
+    score: typeof item.score === "number" ? item.score.toFixed(2) : String(item.score ?? ""),
+    matchText: item.text || "",
+    chunkId: `src-${index}`,
+  }));
+}
 
 const FEEDBACK_TYPE_OPTIONS = [
   { value: "issue", label: "问题反馈" },
@@ -612,6 +624,7 @@ function Workspace({ onLanding, onLogout }) {
     team: "—", department: "—", securityLevel: "team", createdAt: "—", loginMethod: "—", status: "正常",
   });
   const [activeCitations, setActiveCitations] = useState([]);
+  const [chatSessionId, setChatSessionId] = useState(null);
   const [kbs, setKbs] = useState([]);
   const [history, setHistory] = useState(INITIAL_HISTORY);
   const [hasConversation, setHasConversation] = useState(false);
@@ -686,8 +699,22 @@ function Workspace({ onLanding, onLogout }) {
     if (!feedbackText.trim() || feedbackSending) return;
     setFeedbackSending(true);
     try {
-      // 预留接口：POST /api/feedback
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      let sessionId = chatSessionId;
+      if (!sessionId) {
+        const created = await chatApi.createSession();
+        sessionId = created.session_id;
+        setChatSessionId(sessionId);
+      }
+      const typeLabel = FEEDBACK_TYPE_OPTIONS.find((item) => item.value === feedbackType)?.label || feedbackType;
+      const commentParts = [`[${typeLabel}] ${feedbackText.trim()}`];
+      if (feedbackContact.trim()) commentParts.push(`联系方式: ${feedbackContact.trim()}`);
+      await chatApi.feedback({
+        session_id: sessionId,
+        query: currentQuestion || "工作台意见反馈",
+        rating: feedbackType === "issue" ? 2 : feedbackType === "feature" ? 4 : 3,
+        comment: commentParts.join("\n"),
+        need_human: feedbackType === "issue",
+      });
       setFeedbackDone(true);
       setFeedbackText("");
       setFeedbackContact("");
@@ -695,6 +722,8 @@ function Workspace({ onLanding, onLogout }) {
         setFeedbackDone(false);
         closeHeaderMenus();
       }, 1400);
+    } catch (err) {
+      window.alert(err.message || "反馈提交失败");
     } finally {
       setFeedbackSending(false);
     }
@@ -747,59 +776,55 @@ function Workspace({ onLanding, onLogout }) {
     setSourceOpen(false);
     setActiveCitations([]);
     const stageTimers = [0, 1, 2, 3, 4, 5].map((value, index) => setTimeout(() => setStage(value), index * 400));
+
     try {
-      let data = null;
-      try {
-        data = await faqApi.search(text);
-      } catch (faqError) {
-        // FAQ 接口失败时仍尝试向量检索，避免后端瞬时抖动导致整页报错
-        data = { found: false };
+      let sessionId = chatSessionId;
+      if (!sessionId) {
+        const created = await chatApi.createSession();
+        sessionId = created.session_id;
+        setChatSessionId(sessionId);
       }
-      let answer;
+
+      const result = await chatApi.query({
+        query: text,
+        session_id: sessionId,
+      });
+      sessionId = result.session_id || sessionId;
+      setChatSessionId(sessionId);
+
+      let answer = "";
       let citations = [];
-      if (data.found) {
-        answer = data.answer;
-        if (data.source) {
-          citations = [{
-            id: `faq-${Date.now()}`,
-            type: "FAQ",
-            title: data.source,
-            location: data.category || "高频问答",
-            score: data.cached ? "缓存命中" : "精确匹配",
-            matchText: data.answer?.slice(0, 120) || "",
-            chunkId: `faq-${data.team || "default"}`,
-          }];
+      let needHuman = Boolean(result.need_human);
+
+      if (result.is_streaming) {
+        setStage(3);
+        const streamed = await chatApi.stream({
+          query: text,
+          sessionId,
+          onToken: (_piece, full) => {
+            setStream(full);
+            setStage((prev) => Math.max(prev, 4));
+          },
+        });
+        answer = streamed.answer || "";
+        citations = sourcesToCitations(streamed.sources);
+        needHuman = needHuman || Boolean(streamed.need_human);
+        if (streamed.session_id) {
+          sessionId = streamed.session_id;
+          setChatSessionId(sessionId);
         }
       } else {
-        try {
-          const retrieval = await knowledgeApi.searchRetrieval({
-            question: text,
-            top_k: 5,
-            use_rerank: false,
-            use_llm_rewrite: false,
-          });
-          if (retrieval.items?.length) {
-            answer = `根据知识库检索到 ${retrieval.total} 个相关片段：\n\n${retrieval.items.map((item, index) => `${index + 1}. ${item.snippet}`).join("\n\n")}`;
-            citations = retrieval.items.map((item, index) => ({
-              id: `retrieval-${index}`,
-              type: item.type,
-              title: item.doc,
-              location: item.location,
-              score: item.score,
-              matchText: item.snippet,
-              chunkId: item.chunkId,
-            }));
-          } else {
-            answer = data.message || "暂未在 FAQ 与向量库中找到匹配内容，请尝试换个问法或在知识库上传更多文档。";
-          }
-        } catch (retrievalError) {
-          if (!data) throw retrievalError;
-          answer = data.message || "暂未在 FAQ 中找到匹配内容；向量检索暂时不可用，请稍后重试。";
-        }
+        answer = result.answer || "";
+        citations = sourcesToCitations(result.sources);
+      }
+
+      if (needHuman && answer && !/转人工|人工处理/.test(answer)) {
+        answer = `${answer}\n\n（系统已建议转人工跟进）`;
       }
       if (!answer) {
-        throw new Error("暂未找到匹配内容，请稍后重试或换个问法。");
+        throw new Error("暂未生成回答，请稍后重试或换个问法。");
       }
+
       setStream(answer);
       setActiveCitations(citations);
       setHistory((prev) => {
@@ -846,6 +871,8 @@ function Workspace({ onLanding, onLogout }) {
     setCurrentQuestion("");
     setHasConversation(false);
     setSourceOpen(false);
+    setActiveCitations([]);
+    setChatSessionId(null);
   }
 
   const filteredRecents = useMemo(() => {

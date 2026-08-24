@@ -96,7 +96,7 @@ class SSOAuth:
             raise SSOAuthError(f"非法 security_level '{level}'")
         return UserContext(
             user_id=str(payload.get("sub", "")),
-            name=str(payload.get("name", "")),
+            name=str(payload.get("name") or payload.get("nickname") or ""),
             team=str(payload.get("team", "")),
             security_level=level,
         )

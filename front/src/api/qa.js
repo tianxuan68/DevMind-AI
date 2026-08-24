@@ -227,6 +227,124 @@ export const faqApi = {
   search: (question) => request("/api/faq/search", { method: "POST", body: { question }, auth: true }),
 };
 
+// ---------- 智能问答（T8：query / stream / feedback） ----------
+export function getWsBaseUrl() {
+  if (API_BASE_URL) {
+    return API_BASE_URL.replace(/^http/, "ws");
+  }
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${window.location.host}`;
+}
+
+/**
+ * WS /api/stream 流式问答。
+ * 时序：auth → start → query → token* → end
+ */
+export function streamChat({
+  query,
+  sessionId = null,
+  sourceFilter = null,
+  onToken,
+  timeoutMs = 180000,
+} = {}) {
+  const token = getToken();
+  if (!token) {
+    return Promise.reject(new Error("请先登录"));
+  }
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let answer = "";
+    let activeSessionId = sessionId;
+    const ws = new WebSocket(`${getWsBaseUrl()}/api/stream`);
+
+    const finish = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try {
+        ws.close();
+      } catch {
+        // ignore
+      }
+      fn(value);
+    };
+
+    const timer = setTimeout(() => {
+      finish(reject, new Error("流式问答超时，请稍后重试"));
+    }, timeoutMs);
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: "auth", token }));
+    };
+
+    ws.onmessage = (event) => {
+      let msg;
+      try {
+        msg = JSON.parse(event.data);
+      } catch {
+        finish(reject, new Error("流式响应格式错误"));
+        return;
+      }
+
+      if (msg.type === "start") {
+        activeSessionId = sessionId || msg.session_id || activeSessionId;
+        ws.send(JSON.stringify({
+          type: "query",
+          query,
+          session_id: activeSessionId,
+          source_filter: sourceFilter || null,
+        }));
+        return;
+      }
+
+      if (msg.type === "token") {
+        const piece = msg.token || "";
+        answer += piece;
+        if (onToken) onToken(piece, answer);
+        return;
+      }
+
+      if (msg.type === "end") {
+        finish(resolve, {
+          answer,
+          sources: msg.sources || [],
+          session_id: activeSessionId,
+          need_human: Boolean(msg.need_human),
+          is_complete: msg.is_complete !== false,
+          processing_time: msg.processing_time,
+        });
+        return;
+      }
+
+      if (msg.type === "error") {
+        const errText = msg.error || "流式问答失败";
+        if (/未认证|token|401/i.test(errText)) {
+          handleAuthError(401);
+        }
+        finish(reject, new Error(errText));
+      }
+    };
+
+    ws.onerror = () => {
+      finish(reject, new Error("WebSocket 连接失败，请确认后端已启动且代理支持 WS"));
+    };
+
+    ws.onclose = () => {
+      if (!settled) {
+        finish(reject, new Error("WebSocket 连接已关闭"));
+      }
+    };
+  });
+}
+
+export const chatApi = {
+  createSession: () => request("/api/create_session", { method: "POST", auth: true }),
+  query: (body) => request("/api/query", { method: "POST", body, auth: true }),
+  feedback: (body) => request("/api/feedback", { method: "POST", body, auth: true }),
+  stream: streamChat,
+};
+
 // ---------- 客户端启动配置 ----------
 export const bootstrapApi = {
   get: () => request("/api/client/bootstrap"),

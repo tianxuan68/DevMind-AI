@@ -50,6 +50,7 @@ def create_access_token(user: dict) -> str:
         "sub": str(user["id"]),
         "username": user["username"],
         "nickname": user.get("nickname"),
+        "name": user.get("nickname") or user.get("username") or "",
         "phone": user.get("phone"),
         "team": user.get("team"),
         "security_level": user.get("security_level", "team"),

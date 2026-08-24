@@ -25,15 +25,17 @@ Compress-Archive -Path (Join-Path $Root "front\dist\*") -DestinationPath $FrontZ
 
 Push-Location $Root
 try {
-    tar -a -cf $BackendZip `
-        --exclude=internal_kb_qa/models `
-        --exclude=**/__pycache__ `
-        --exclude=**/.venv `
-        --exclude=**/node_modules `
-        --exclude=data/uploads `
-        --exclude=logs `
-        backend base internal_kb_qa config.ini pyproject.toml uv.lock sql docker scripts locust_test.py
-    if ($LASTEXITCODE -ne 0) { throw "tar failed with exit code $LASTEXITCODE" }
+        tar -a -cf $BackendZip `
+            --exclude=internal_kb_qa/models `
+            --exclude=**/__pycache__ `
+            --exclude=**/.venv `
+            --exclude=**/node_modules `
+            --exclude=data/uploads `
+            --exclude=logs `
+            backend base internal_kb_qa mysql_qa rag_qa `
+            new_main.py app.py config.ini pyproject.toml uv.lock .python-version `
+            sql docker scripts locust_test.py
+        if ($LASTEXITCODE -ne 0) { throw "tar failed with exit code $LASTEXITCODE" }
 }
 finally {
     Pop-Location

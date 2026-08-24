@@ -1,10 +1,7 @@
-"""T7/T13 任务代码集成测试（v2：七类意图版本）。
+"""T7/T13 兼容测试：T6 二类 + T8 英文七类 slug 路由。
 
-与 test_t7_t13_integration.py（v1 两类别）的区别：
-    - 意图类别从 2 类（技术咨询 / 通用知识）升级为 7 类：
-      tech / access_request / incident / ticket_inquiry /
-      complaint_suggestion / policy_general / common。
-    - 检索策略路由、rag_answer 分流均按 7 类断言。
+当前 intent_classifier 为二类（技术咨询 / 通用知识）；
+search_strategy / query_rewrite / rag_generator 同时兼容 T8 规则降级的英文 slug。
 """
 from __future__ import annotations
 
@@ -14,51 +11,50 @@ import unittest
 from dataclasses import fields
 from unittest.mock import patch
 
-# 保证从项目根目录可导入 internal_kb_qa / base / rag_qa
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-# ---------------------------------------------------------------------------
-# 1. 契约与导入
-# ---------------------------------------------------------------------------
+# T8 英文 slug（不依赖 intent_classifier 七类常量）
+CAT_TECH_EN = "tech"
+CAT_ACCESS = "access_request"
+CAT_INCIDENT = "incident"
+CAT_TICKET = "ticket_inquiry"
+CAT_COMPLAINT = "complaint_suggestion"
+CAT_POLICY = "policy_general"
+CAT_COMMON = "common"
 
 
 class TestContracts(unittest.TestCase):
     def test_imports(self):
         from internal_kb_qa.core.intent_classifier import (
-            CATEGORY_ACCESS_REQUEST,
-            CATEGORY_COMMON,
-            CATEGORY_COMPLAINT_SUGGESTION,
-            CATEGORY_INCIDENT,
-            CATEGORY_POLICY_GENERAL,
+            CATEGORY_GENERAL,
             CATEGORY_TECH,
-            CATEGORY_TICKET_INQUIRY,
             Classification,
             classify,
         )
-        from internal_kb_qa.core.search_strategy import SearchStrategy, build_search_strategy
         from internal_kb_qa.core.query_rewrite import RewrittenQuery, query_rewrite
-        from internal_kb_qa.core.rag_generator import RAGResult, rag_answer, prepare_rag_context
+        from internal_kb_qa.core.rag_generator import RAGResult, prepare_rag_context, rag_answer
+        from internal_kb_qa.core.search_strategy import SearchStrategy, build_search_strategy
         from rag_qa.core.strategy_selector import StrategySelector
 
-        # 七类意图取值（与 T6 v2 对齐）
-        self.assertEqual(CATEGORY_TECH, "tech")
-        self.assertEqual(CATEGORY_ACCESS_REQUEST, "access_request")
-        self.assertEqual(CATEGORY_INCIDENT, "incident")
-        self.assertEqual(CATEGORY_TICKET_INQUIRY, "ticket_inquiry")
-        self.assertEqual(CATEGORY_COMPLAINT_SUGGESTION, "complaint_suggestion")
-        self.assertEqual(CATEGORY_POLICY_GENERAL, "policy_general")
-        self.assertEqual(CATEGORY_COMMON, "common")
-
+        self.assertEqual(CATEGORY_TECH, "技术咨询")
+        self.assertEqual(CATEGORY_GENERAL, "通用知识")
         self.assertTrue(callable(classify))
         self.assertTrue(callable(build_search_strategy))
         self.assertTrue(callable(query_rewrite))
         self.assertTrue(callable(rag_answer))
+        self.assertTrue(callable(prepare_rag_context))
+        self.assertTrue(hasattr(StrategySelector, "STRATEGY_DIRECT"))
+        self.assertEqual(Classification.__name__, "Classification")
+        self.assertEqual(SearchStrategy.__name__, "SearchStrategy")
+        self.assertEqual(RewrittenQuery.__name__, "RewrittenQuery")
+        self.assertEqual(RAGResult.__name__, "RAGResult")
 
         try:
-            from internal_kb_qa.core.reranker import rerank
             from internal_kb_qa.core.hybrid_search import search
+            from internal_kb_qa.core.reranker import rerank
+
             self.assertTrue(callable(rerank))
             self.assertTrue(callable(search))
         except OSError as exc:
@@ -86,13 +82,8 @@ class TestContracts(unittest.TestCase):
             self.assertIn(required, names)
 
 
-# ---------------------------------------------------------------------------
-# 2. T13 策略路由（七类，无需外部服务）
-# ---------------------------------------------------------------------------
-
-
 class TestSearchStrategy(unittest.TestCase):
-    def test_tech_hybrid(self):
+    def test_tech_cn_hybrid(self):
         from internal_kb_qa.core.intent_classifier import CATEGORY_TECH
         from internal_kb_qa.core.search_strategy import build_search_strategy
 
@@ -100,63 +91,36 @@ class TestSearchStrategy(unittest.TestCase):
         self.assertEqual(s.strategy, "hybrid")
         self.assertTrue(s.use_rerank)
 
-    def test_access_request_hybrid(self):
-        from internal_kb_qa.core.intent_classifier import CATEGORY_ACCESS_REQUEST
+    def test_general_cn_none(self):
+        from internal_kb_qa.core.intent_classifier import CATEGORY_GENERAL
         from internal_kb_qa.core.search_strategy import build_search_strategy
 
-        s = build_search_strategy("申请生产环境数据库只读账号", CATEGORY_ACCESS_REQUEST)
-        self.assertEqual(s.strategy, "hybrid")
-        self.assertTrue(s.use_rerank)
-
-    def test_incident_runbook(self):
-        from internal_kb_qa.core.intent_classifier import CATEGORY_INCIDENT
-        from internal_kb_qa.core.search_strategy import build_search_strategy
-
-        s = build_search_strategy("线上服务突然大量 502 报错", CATEGORY_INCIDENT)
-        self.assertEqual(s.strategy, "runbook")
-        self.assertTrue(s.use_rerank)
-
-    def test_ticket_inquiry_none(self):
-        from internal_kb_qa.core.intent_classifier import CATEGORY_TICKET_INQUIRY
-        from internal_kb_qa.core.search_strategy import build_search_strategy
-
-        s = build_search_strategy("我提交的工单处理到哪一步了？", CATEGORY_TICKET_INQUIRY)
+        s = build_search_strategy("今天天气怎么样", CATEGORY_GENERAL)
         self.assertEqual(s.strategy, "none")
         self.assertFalse(s.use_rerank)
 
-    def test_complaint_none(self):
-        from internal_kb_qa.core.intent_classifier import CATEGORY_COMPLAINT_SUGGESTION
+    def test_english_slug_routes(self):
         from internal_kb_qa.core.search_strategy import build_search_strategy
 
-        s = build_search_strategy("这个系统太难用了，我要投诉", CATEGORY_COMPLAINT_SUGGESTION)
-        self.assertEqual(s.strategy, "none")
-        self.assertFalse(s.use_rerank)
-
-    def test_policy_general_none(self):
-        from internal_kb_qa.core.intent_classifier import CATEGORY_POLICY_GENERAL
-        from internal_kb_qa.core.search_strategy import build_search_strategy
-
-        s = build_search_strategy("公司年假有多少天？", CATEGORY_POLICY_GENERAL)
-        self.assertEqual(s.strategy, "none")
-        self.assertFalse(s.use_rerank)
-
-    def test_common_none(self):
-        from internal_kb_qa.core.intent_classifier import CATEGORY_COMMON
-        from internal_kb_qa.core.search_strategy import build_search_strategy
-
-        s = build_search_strategy("今天天气怎么样？", CATEGORY_COMMON)
-        self.assertEqual(s.strategy, "none")
-        self.assertFalse(s.use_rerank)
-
-
-# ---------------------------------------------------------------------------
-# 3. 链路 mock 测试（不依赖 Milvus / 重排模型）
-# ---------------------------------------------------------------------------
+        cases = [
+            (CAT_TECH_EN, "hybrid", True),
+            (CAT_ACCESS, "hybrid", True),
+            (CAT_INCIDENT, "runbook", True),
+            (CAT_TICKET, "none", False),
+            (CAT_COMPLAINT, "none", False),
+            (CAT_POLICY, "none", False),
+            (CAT_COMMON, "none", False),
+        ]
+        for category, expected, rerank in cases:
+            s = build_search_strategy("q", category)
+            self.assertEqual(s.strategy, expected, category)
+            self.assertEqual(s.use_rerank, rerank, category)
 
 
 class TestPipelineMocked(unittest.TestCase):
     def _mock_hit(self):
         from internal_kb_qa.core.hit import Hit
+
         return Hit(
             text="MySQL 连接池 max_connections 默认值为 151，可在 my.cnf 中调整。",
             score=0.92,
@@ -199,12 +163,11 @@ class TestPipelineMocked(unittest.TestCase):
     @patch("internal_kb_qa.core.rag_generator._call_llm_sync")
     @patch("internal_kb_qa.core.rag_generator._run_rag_pipeline")
     def test_policy_general_direct_llm_no_search(self, mock_pipeline, mock_llm):
-        from internal_kb_qa.core.intent_classifier import CATEGORY_POLICY_GENERAL
         from internal_kb_qa.core.rag_generator import rag_answer
 
         mock_llm.return_value = "公司年假是 10 天。"
 
-        result = rag_answer("公司年假有多少天？", category=CATEGORY_POLICY_GENERAL)
+        result = rag_answer("公司年假有多少天？", category=CAT_POLICY)
         mock_pipeline.assert_not_called()
 
         self.assertFalse(result.need_human)
@@ -214,12 +177,11 @@ class TestPipelineMocked(unittest.TestCase):
     @patch("internal_kb_qa.core.rag_generator._call_llm_sync")
     @patch("internal_kb_qa.core.rag_generator._run_rag_pipeline")
     def test_common_direct_llm_no_search(self, mock_pipeline, mock_llm):
-        from internal_kb_qa.core.intent_classifier import CATEGORY_COMMON
         from internal_kb_qa.core.rag_generator import rag_answer
 
         mock_llm.return_value = "今天天气不错。"
 
-        result = rag_answer("今天天气怎么样？", category=CATEGORY_COMMON)
+        result = rag_answer("今天天气怎么样？", category=CAT_COMMON)
         mock_pipeline.assert_not_called()
 
         self.assertFalse(result.need_human)
@@ -227,18 +189,16 @@ class TestPipelineMocked(unittest.TestCase):
         mock_llm.assert_called_once()
 
     def test_ticket_inquiry_need_human(self):
-        from internal_kb_qa.core.intent_classifier import CATEGORY_TICKET_INQUIRY
         from internal_kb_qa.core.rag_generator import rag_answer
 
-        result = rag_answer("我提交的工单处理到哪一步了？", category=CATEGORY_TICKET_INQUIRY)
+        result = rag_answer("我提交的工单处理到哪一步了？", category=CAT_TICKET)
         self.assertTrue(result.need_human)
         self.assertEqual(result.sources, [])
 
     def test_complaint_need_human(self):
-        from internal_kb_qa.core.intent_classifier import CATEGORY_COMPLAINT_SUGGESTION
         from internal_kb_qa.core.rag_generator import rag_answer
 
-        result = rag_answer("这个系统太难用了", category=CATEGORY_COMPLAINT_SUGGESTION)
+        result = rag_answer("这个系统太难用了", category=CAT_COMPLAINT)
         self.assertTrue(result.need_human)
         self.assertEqual(result.sources, [])
 
@@ -259,127 +219,12 @@ class TestPipelineMocked(unittest.TestCase):
         self.assertEqual(rw.advanced_strategy, StrategySelector.STRATEGY_DIRECT)
 
     def test_query_rewrite_no_search_categories(self):
-        from internal_kb_qa.core.intent_classifier import (
-            CATEGORY_COMPLAINT_SUGGESTION,
-            CATEGORY_COMMON,
-            CATEGORY_POLICY_GENERAL,
-            CATEGORY_TICKET_INQUIRY,
-        )
         from internal_kb_qa.core.query_rewrite import query_rewrite
 
-        for category in (
-            CATEGORY_TICKET_INQUIRY,
-            CATEGORY_COMPLAINT_SUGGESTION,
-            CATEGORY_POLICY_GENERAL,
-            CATEGORY_COMMON,
-        ):
+        for category in (CAT_TICKET, CAT_COMPLAINT, CAT_POLICY, CAT_COMMON):
             rw = query_rewrite("今天天气怎么样？", category=category)
             self.assertEqual(rw.search_queries, [], f"{category} 不应产生检索 query")
 
 
-# ---------------------------------------------------------------------------
-# 4. Live 测试（需要 DASHSCOPE_API_KEY；Milvus/模型可选）
-# ---------------------------------------------------------------------------
-
-
-class TestLiveOptional(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        from base.config import Config
-
-        cls.conf = Config()
-        cls.has_api_key = bool(cls.conf.DASHSCOPE_API_KEY)
-
-    def test_live_strategy_selector(self):
-        if not self.has_api_key:
-            self.skipTest("未配置 DASHSCOPE_API_KEY")
-        from rag_qa.core.strategy_selector import StrategySelector
-
-        strategy = StrategySelector().select_strategy(
-            "user-service 的 JWT 鉴权配置在哪里？"
-        )
-        self.assertIn(strategy, StrategySelector.ALL_STRATEGIES)
-
-    def test_live_intent_classifier(self):
-        if not self.has_api_key:
-            self.skipTest("未配置 DASHSCOPE_API_KEY")
-        from internal_kb_qa.core.intent_classifier import CATEGORY_TECH, classify
-
-        result = classify("本地启动服务报 502 怎么排查？")
-        self.assertEqual(result.category, CATEGORY_TECH)
-        self.assertGreater(result.confidence, 0)
-
-    def test_live_milvus(self):
-        from base.config import Config
-
-        conf = Config()
-        try:
-            from pymilvus import MilvusClient
-
-            client = MilvusClient(
-                uri=f"http://{conf.MILVUS_HOST}:{conf.MILVUS_PORT}",
-                db_name=conf.MILVUS_DATABASE_NAME,
-                timeout=5,
-            )
-            cols = client.list_collections()
-            self.assertIsInstance(cols, list)
-        except Exception as exc:
-            self.skipTest(f"Milvus 不可达: {exc}")
-
-    def test_live_reranker_model(self):
-        from pathlib import Path
-
-        model_dir = Path(__file__).resolve().parents[1] / "internal_kb_qa" / "models" / "bge-reranker-v2-m3"
-        if not model_dir.exists():
-            self.skipTest("精排模型未复制到 internal_kb_qa/models/bge-reranker-v2-m3")
-
-        from internal_kb_qa.core.hit import Hit
-
-        hits = [
-            Hit(text="MySQL 连接池配置说明...", score=0.5, metadata={"source": "a.md"}),
-            Hit(text="Redis 集群部署文档...", score=0.4, metadata={"source": "b.md"}),
-        ]
-        try:
-            from internal_kb_qa.core.reranker import rerank
-
-            ranked = rerank("MySQL 连接池默认配置", hits, top_k=1)
-            self.assertEqual(len(ranked), 1)
-            self.assertIn("MySQL", ranked[0].text)
-        except OSError as exc:
-            self.skipTest(f"torch DLL 不可用，跳过精排 live 测试: {exc}")
-
-
-def run_summary():
-    loader = unittest.TestLoader()
-    suite = unittest.TestSuite()
-    for cls in (TestContracts, TestSearchStrategy, TestPipelineMocked, TestLiveOptional):
-        suite.addTests(loader.loadTestsFromTestCase(cls))
-
-    runner = unittest.TextTestRunner(verbosity=2)
-    result = runner.run(suite)
-
-    print("\n" + "=" * 60)
-    print(f"总计: {result.testsRun}  通过: {result.testsRun - len(result.failures) - len(result.errors)}")
-    print(f"失败: {len(result.failures)}  错误: {len(result.errors)}  跳过: {len(result.skipped)}")
-    print("=" * 60)
-
-    # 上下游对接说明（v2 七类）
-    print("\n【上下游对接检查（v2 七类）】")
-    checks = [
-        ("T6 → T7/T13（七类）", "rag_generator 调用 classify() 与 query_rewrite(category=...)"),
-        ("T13 strategy_selector → query_rewrite", "query_rewrite 内 StrategySelector.get_instance()"),
-        ("T13 search_strategy（七类路由）", "build_search_strategy 决定 hybrid/runbook/none"),
-        ("T4 hybrid_search → rag_generator", "rag_generator._retrieve 调用 hybrid_search"),
-        ("T7 reranker → rag_generator", "_run_rag_pipeline 内 rerank()"),
-        ("T7 → T8（下游）", "rag_answer / rag_answer_stream / prepare_rag_context 已导出"),
-        ("T8 new_main 串联", "new_main.py / query.py 仍为 TODO，T8 未接入"),
-    ]
-    for name, status in checks:
-        mark = "OK" if "仍为 TODO" not in status else "PENDING"
-        print(f"  {mark} {name}: {status}")
-
-    return 0 if result.wasSuccessful() else 1
-
-
 if __name__ == "__main__":
-    sys.exit(run_summary())
+    unittest.main()

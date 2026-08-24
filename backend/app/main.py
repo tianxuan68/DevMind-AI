@@ -1,8 +1,9 @@
 """DevMind-AI 后端服务入口。
 
+统一挂载工作台 API（auth/knowledge/faq）与 T8 问答 API（query/stream/feedback）。
+
 启动方式：
-    cd backend
-    uvicorn app.main:app --host 0.0.0.0 --port 8004 --reload
+    uv run uvicorn backend.app.main:app --host 0.0.0.0 --port 8004
 """
 import os
 
@@ -10,6 +11,9 @@ import os
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")
+# 工作台 JWT 与 T8 SSO 共用密钥时，默认走 jwt 模式（可被 SSO_MODE 覆盖）
+if os.getenv("JWT_SECRET"):
+    os.environ.setdefault("SSO_MODE", "jwt")
 
 from contextlib import asynccontextmanager
 
@@ -23,19 +27,37 @@ from backend.app.api import api_router
 from backend.app.core.db import db
 from backend.app.core.logging_config import setup_logging
 from base.logger import logger
+from internal_kb_qa.api.routers import api_router as qa_api_router
 
 setup_logging()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 启动时创建 MySQL/Redis 连接池
     await db.connect()
-    # 默认关闭预热，避免 Windows 低内存环境下启动即加载 BGE-M3 导致进程崩溃
+
+    from base.config import Config
+    from new_main import IntegratedQASystem
+
+    config = Config()
+    qa_system = IntegratedQASystem(config)
+    app.state.qa_system = qa_system
+    logger.info(
+        "问答系统已挂载到后端（sso_mode=%s, ticket_enabled=%s）",
+        config.SSO_MODE,
+        config.TICKET_ENABLED,
+    )
+
     if os.getenv("RETRIEVAL_WARMUP", "false").lower() in {"1", "true", "yes", "on"}:
         asyncio.create_task(_warmup_retrieval())
+
     yield
-    # 关闭时释放连接池
+
+    if getattr(qa_system.ticket_service, "db", None) is not None:
+        try:
+            qa_system.ticket_service.db.close()
+        except Exception as exc:
+            logger.warning("关闭工单 MySQL 连接失败: %s", exc)
     await db.close()
 
 
@@ -60,11 +82,13 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
+app.include_router(qa_api_router)
 
 
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8004)

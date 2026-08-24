@@ -24,6 +24,14 @@ from internal_kb_qa.core.prompts import RAGPrompts
 from internal_kb_qa.core.query_rewrite import RewrittenQuery, query_rewrite
 from internal_kb_qa.core.search_strategy import SearchStrategy, build_search_strategy
 
+# T6「通用知识」+ T8 映射后的英文 slug，走直接 LLM、不检索
+_GENERAL_LIKE_CATEGORIES = frozenset({
+    CATEGORY_GENERAL,
+    "policy_general",
+    "common",
+    "chitchat",
+})
+
 
 @dataclass
 class Source:
@@ -205,7 +213,7 @@ def rag_answer(
     if category is None:
         category = classify(query).category
 
-    if category == CATEGORY_GENERAL:
+    if category in _GENERAL_LIKE_CATEGORIES:
         result = _answer_general_knowledge(query, history, conf)
         logger.info(f"通用知识回答完成, 耗时={time.time() - start:.2f}s")
         return result
@@ -271,7 +279,7 @@ def rag_answer_stream(
     if category is None:
         category = classify(query).category
 
-    if category == CATEGORY_GENERAL:
+    if category in _GENERAL_LIKE_CATEGORIES:
         client = _get_llm_client(conf)
         for token in _call_llm_stream(client, conf.LLM_MODEL, _build_general_prompt(query, history)):
             yield token
@@ -314,7 +322,7 @@ def prepare_rag_context(
     if category is None:
         category = classify(query).category
 
-    if category == CATEGORY_GENERAL:
+    if category in _GENERAL_LIKE_CATEGORIES:
         return [], [], 1.0, False, ""
 
     hits, rewritten, strategy = _run_rag_pipeline(query, history, category)

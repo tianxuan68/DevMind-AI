@@ -75,8 +75,9 @@ async def stream(websocket: WebSocket):
                     else:  # end
                         await websocket.send_json({
                             "type": "end",
-                            "is_complete": event["is_complete"],
-                            "sources": event["sources"],
+                            "is_complete": event.get("is_complete", True),
+                            "sources": event.get("sources") or [],
+                            "need_human": bool(event.get("need_human")),
                             "processing_time": round(time.time() - start_time, 3),
                         })
             except Exception as e:

@@ -2,44 +2,41 @@
 
 对外接口：
     build_search_strategy(query: str, category: str) -> SearchStrategy
-策略：hybrid / runbook / none（与 T6 七类意图对齐）
+策略：hybrid / runbook / none
+
+与 T6 对齐：当前意图分类为二类（技术咨询 / 通用知识）；
+同时兼容 T8 new_main 规则降级使用的英文七类 slug，避免合并后 ImportError。
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
 from base.config import Config
-from internal_kb_qa.core.intent_classifier import (
-    CATEGORY_ACCESS_REQUEST,
-    CATEGORY_COMMON,
-    CATEGORY_COMPLAINT_SUGGESTION,
-    CATEGORY_INCIDENT,
-    CATEGORY_POLICY_GENERAL,
-    CATEGORY_TECH,
-    CATEGORY_TICKET_INQUIRY,
-)
+from internal_kb_qa.core.intent_classifier import CATEGORY_GENERAL, CATEGORY_TECH
 
 
 @dataclass
 class SearchStrategy:
-    strategy: str          # hybrid / runbook / none
+    strategy: str  # hybrid / runbook / none
     top_k: int
     use_rerank: bool
     filters: dict = field(default_factory=dict)
 
 
-# 七类意图 -> 检索策略（与 T6 v2 意图分类对齐）
+# 二类 + 英文七类兼容映射
 _CATEGORY_STRATEGY = {
-    CATEGORY_TECH: "hybrid",               # 技术咨询：混合检索 + RAG
-    CATEGORY_ACCESS_REQUEST: "hybrid",     # 权限/账号申请：混合检索 + 权限过滤
-    CATEGORY_INCIDENT: "runbook",          # 故障上报：值班手册优先
-    CATEGORY_TICKET_INQUIRY: "none",       # 工单/进度查询：不检索，转工单
-    CATEGORY_COMPLAINT_SUGGESTION: "none",  # 投诉/建议：不检索，转人工
-    CATEGORY_POLICY_GENERAL: "none",       # 制度/通用知识：不检索，直接 LLM
-    CATEGORY_COMMON: "none",               # 闲聊：不检索，直接 LLM
+    CATEGORY_TECH: "hybrid",
+    CATEGORY_GENERAL: "none",
+    "tech": "hybrid",
+    "access_request": "hybrid",
+    "incident": "runbook",
+    "ticket_inquiry": "none",
+    "complaint_suggestion": "none",
+    "policy_general": "none",
+    "common": "none",
+    "chitchat": "none",
 }
 
-# 需要进入 T7 重排的策略
 _RERANK_STRATEGIES = {"hybrid", "runbook"}
 
 
@@ -61,12 +58,13 @@ def _main() -> None:
     """T13 本地测试：检索策略路由（无需 LLM / Milvus / 模型）。"""
     cases = [
         ("MySQL 连接池默认配置是多少？", CATEGORY_TECH, "hybrid"),
-        ("我需要申请生产环境数据库只读账号", CATEGORY_ACCESS_REQUEST, "hybrid"),
-        ("线上服务突然大量 502 报错", CATEGORY_INCIDENT, "runbook"),
-        ("我提交的工单现在处理到哪一步了？", CATEGORY_TICKET_INQUIRY, "none"),
-        ("这个系统太难用了，我要投诉", CATEGORY_COMPLAINT_SUGGESTION, "none"),
-        ("公司年假有多少天？", CATEGORY_POLICY_GENERAL, "none"),
-        ("今天天气怎么样？", CATEGORY_COMMON, "none"),
+        ("今天天气怎么样？", CATEGORY_GENERAL, "none"),
+        ("我需要申请生产环境数据库只读账号", "access_request", "hybrid"),
+        ("线上服务突然大量 502 报错", "incident", "runbook"),
+        ("我提交的工单现在处理到哪一步了？", "ticket_inquiry", "none"),
+        ("这个系统太难用了，我要投诉", "complaint_suggestion", "none"),
+        ("公司年假有多少天？", "policy_general", "none"),
+        ("今天天气怎么样？", "common", "none"),
     ]
     passed = 0
     for query, category, expected in cases:

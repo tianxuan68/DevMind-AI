@@ -576,10 +576,23 @@ async def delete_document(doc_id: int) -> None:
     if not row:
         raise HTTPException(status_code=404, detail="文档不存在")
     storage_path = row.get("storage_path") or ""
+    doc_source = row.get("doc_source") or ""
+
+    # complete_oss_upload 后 storage_path 已是本地路径，object_key 保留在 doc_source
     parsed = oss_service.parse_oss_uri(storage_path)
+    object_key = None
     if parsed:
         _bucket, object_key = parsed
-        await asyncio.to_thread(oss_service.delete_object, object_key)
+    elif doc_source and not doc_source.startswith(("http://", "https://", "oss://")) and "/" in doc_source:
+        # init_oss_upload 将 object_key 写入 doc_source
+        object_key = doc_source
+
+    if object_key and oss_service.is_enabled():
+        try:
+            await asyncio.to_thread(oss_service.delete_object, object_key)
+        except Exception as exc:
+            logger.warning("删除 OSS 对象失败 key=%s: %s", object_key, exc)
+
     if storage_path and not storage_path.startswith("oss://"):
         path = Path(storage_path)
         if path.exists():

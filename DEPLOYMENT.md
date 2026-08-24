@@ -86,7 +86,9 @@ cd /path/to/DevMind-AI
 mkdir -p dist/release
 DATE_TAG=$(date +%Y%m%d_%H%M%S)
 zip -r "dist/release/devmind-ai-backend-${DATE_TAG}.zip" \
-  backend base internal_kb_qa config.ini pyproject.toml uv.lock sql docker scripts locust_test.py \
+  backend base internal_kb_qa mysql_qa rag_qa \
+  new_main.py app.py config.ini pyproject.toml uv.lock .python-version \
+  sql docker scripts locust_test.py \
   -x "**/__pycache__/*" "**/*.pyc" "**/.venv/*" "**/node_modules/*" "**/data/uploads/*" "**/logs/*" "**/.git/*" "**/internal_kb_qa/models/*"
 ```
 
@@ -101,7 +103,9 @@ New-Item -ItemType Directory -Force -Path dist\release | Out-Null
 tar -a -cf "dist\release\devmind-ai-backend-$tag.zip" `
   --exclude=internal_kb_qa/models `
   --exclude=**/__pycache__ `
-  backend base internal_kb_qa config.ini pyproject.toml uv.lock sql docker scripts locust_test.py
+  backend base internal_kb_qa mysql_qa rag_qa `
+  new_main.py app.py config.ini pyproject.toml uv.lock .python-version `
+  sql docker scripts locust_test.py
 ```
 
 或使用项目脚本（同上逻辑）：
@@ -261,40 +265,224 @@ sudo systemctl status nginx
 
 模型需放在 `internal_kb_qa/models/` 下：
 
-| 目录 | 用途 |
-|------|------|
-| `internal_kb_qa/models/bge-m3` | 向量嵌入 |
-| `internal_kb_qa/models/bge-reranker-v2-m3` | 精排（可选，低内存环境建议关闭） |
+| 目录 | 用途 | 体积约 | 是否必须 |
+|------|------|--------|----------|
+| `internal_kb_qa/models/bge-m3` | 向量嵌入 | ~2GB | **必须** |
+| `internal_kb_qa/models/bge-reranker-v2-m3` | 精排 | ~2GB | 可选（低内存/带宽紧张可先跳过） |
 
-### 3.4.1 下载命令
+> **重要（国内服务器）**：直连 HuggingFace 官方常只有约 1MB/s，下完整模型可能要几十分钟到数小时。  
+> **必须先设置镜像**，再执行下载命令（见下方）。
 
-> **Python 版本**：须使用 **3.12 或 3.13**。勿用 3.14（`unstructured` → `spacy` 尚无 cp314 wheel，会导致 `uv sync` 失败）。Docker 镜像与 `.python-version` 已固定为 3.12。
+### 3.4.1 环境与依赖（若尚未完成）
+
+> **Python 版本**：须使用 **3.12 或 3.13**。勿用 3.14（`unstructured` → `spacy` 尚无 cp314 wheel）。  
+> 命令必须在项目目录执行：`cd /opt/devmind-ai`，使用 `uv run`，不要用系统全局 Python。
 
 ```bash
 cd /opt/devmind-ai
 
-# 安装 uv 与 Python 3.12（若尚未安装）
 curl -LsSf https://astral.sh/uv/install.sh | sh
 source ~/.bashrc
 uv python install 3.12
 
 # 若曾用 3.14 创建过 .venv，先删除再同步
-rm -rf .venv
+# rm -rf .venv
 uv sync --python 3.12
-
-# 下载全部模型（HuggingFace / ModelScope 自动回退）
-uv run python -m internal_kb_qa.scripts.download_models all
-
-# 或单独下载
-uv run python -m internal_kb_qa.scripts.download_models bge-m3
-uv run python -m internal_kb_qa.scripts.download_models bge-reranker-v2-m3
+# 已有可用 .venv 时优先：
+# uv sync --frozen --python 3.12
 ```
 
-国内服务器可设置镜像：
+### 3.4.2 下载命令（推荐：ModelScope，国内更稳）
+
+> 说明：`HF_ENDPOINT=hf-mirror` 在部分服务器上仍会报  
+> `Distant resource does not seem to be on huggingface.co`，且半截目录会导致  
+> `local file already exists` 不再重下大文件。  
+> **国内生产环境默认优先用 ModelScope**。
 
 ```bash
-export HF_ENDPOINT=https://hf-mirror.com
+cd /opt/devmind-ai
+
+# 安装 ModelScope（若尚未安装）
+uv pip install modelscope
+
+# 清掉半截目录并强制重下（必做，若曾中断过）
+rm -rf internal_kb_qa/models/bge-m3
+rm -rf internal_kb_qa/models/bge-reranker-v2-m3
+
+# 先下必须的嵌入模型
+uv run python -m internal_kb_qa.scripts.download_models bge-m3 --source modelscope --force
+
+# 可选：精排模型
+uv run python -m internal_kb_qa.scripts.download_models bge-reranker-v2-m3 --source modelscope --force
+
+# 或一次下全部（默认 auto：先 ModelScope，失败再 HF）
+# uv run python -m internal_kb_qa.scripts.download_models all --force
 ```
+
+### 3.4.2b 备选：HuggingFace 镜像
+
+仅在 ModelScope 不可用时使用：
+
+```bash
+cd /opt/devmind-ai
+export HF_ENDPOINT=https://hf-mirror.com
+grep -q 'HF_ENDPOINT' ~/.bashrc || echo 'export HF_ENDPOINT=https://hf-mirror.com' >> ~/.bashrc
+
+rm -rf internal_kb_qa/models/bge-m3
+uv run python -m internal_kb_qa.scripts.download_models bge-m3 --source hf --force
+```
+
+脚本优先级：参考目录复制 →（`--source auto`）ModelScope → HuggingFace。
+
+### 3.4.3 备选：ModelScope 一行脚本（脚本不可用时）
+
+```bash
+cd /opt/devmind-ai
+uv pip install modelscope   # 若环境尚无该包
+
+uv run python - <<'PY'
+from modelscope import snapshot_download
+from pathlib import Path
+
+root = Path("internal_kb_qa/models")
+for name, mid in [
+    ("bge-m3", "BAAI/bge-m3"),
+    ("bge-reranker-v2-m3", "BAAI/bge-reranker-v2-m3"),
+]:
+    target = root / name
+    target.mkdir(parents=True, exist_ok=True)
+    print(f"downloading {mid} -> {target}")
+    snapshot_download(model_id=mid, local_dir=str(target))
+    print(f"done {name}")
+PY
+```
+
+### 3.4.4 可选项：本机下载后上传解压（服务器下很慢时）
+
+> **适用**：本机宽带快，但服务器即使用 `HF_ENDPOINT` / ModelScope 仍然很慢。  
+> **不适用**：本机上传带宽也很差（见下方自测）——此时继续在服务器用镜像下更合适。
+
+#### （1）先测本机 → 服务器上传带宽（可选但推荐）
+
+在**本机 PowerShell** 执行：
+
+```powershell
+# 生成约 100MB 测试文件
+fsutil file createnew $env:TEMP\speedtest.bin 104857600
+
+# 上传并计时（改成你的服务器 IP）
+Measure-Command {
+  scp $env:TEMP\speedtest.bin root@8.211.188.59:/tmp/speedtest.bin
+}
+```
+
+粗算：`速度(MB/s) ≈ 100 ÷ 上传秒数`。例如 100MB 用了 50 秒 ≈ **2 MB/s**。
+
+| 本机上传（scp 实测） | 服务器镜像下载 | 建议 |
+|----------------------|----------------|------|
+| ≥ 5 MB/s | ≤ 2 MB/s | **用本选项：本地下好再传** |
+| ≤ 2 MB/s | ≥ 5 MB/s | 不用本选项，按 §3.4.2 / §3.4.3 在服务器下 |
+| 两边都慢 | — | 试 ModelScope，或经同地域 OSS 中转 |
+
+测完后在服务器删除测试文件：`rm -f /tmp/speedtest.bin`。
+
+#### （2）本机准备模型并打包
+
+**若本机项目里已有完整模型：**
+
+```powershell
+# Windows（在 models 目录的上一级）
+cd E:\tianxuan\DevMind-AI\internal_kb_qa\models
+tar -czf D:\models.tgz bge-m3 bge-reranker-v2-m3
+```
+
+**若本机还没有，先下再打包：**
+
+```powershell
+cd E:\tianxuan\DevMind-AI
+$env:HF_ENDPOINT = "https://hf-mirror.com"
+uv run python -m internal_kb_qa.scripts.download_models bge-m3
+uv run python -m internal_kb_qa.scripts.download_models bge-reranker-v2-m3
+
+cd internal_kb_qa\models
+tar -czf D:\models.tgz bge-m3 bge-reranker-v2-m3
+```
+
+打包前确认本机文件齐全（尤其 `pytorch_model.bin` / `model.safetensors`），半截包传上去等于白传。两个模型合计约 **4GB+**，压缩后可能仍有 2～3GB。
+
+#### （3）上传到服务器并解压
+
+```powershell
+# 本机
+scp D:\models.tgz root@8.211.188.59:/opt/devmind-ai/
+# 大文件可用（Git Bash / WSL，支持断点与进度）：
+# rsync -avP --partial D:/models.tgz root@8.211.188.59:/opt/devmind-ai/
+```
+
+```bash
+# 服务器
+cd /opt/devmind-ai
+mkdir -p internal_kb_qa/models
+tar -xzf models.tgz -C internal_kb_qa/models/
+
+# 校验
+ls -lh internal_kb_qa/models/bge-m3/pytorch_model.bin
+ls -lh internal_kb_qa/models/bge-reranker-v2-m3/model.safetensors
+
+# 可选：删掉压缩包省磁盘
+rm -f models.tgz
+```
+
+解压后目录应类似：
+
+```
+/opt/devmind-ai/internal_kb_qa/models/
+├── bge-m3/
+│   ├── config.json
+│   └── pytorch_model.bin
+└── bge-reranker-v2-m3/
+    ├── config.json
+    └── model.safetensors
+```
+
+#### （4）只传必须模型（进一步省时间）
+
+带宽紧张时可只打包 `bge-m3`，精排以后再补：
+
+```powershell
+tar -czf D:\models-bge-m3.tgz bge-m3
+scp D:\models-bge-m3.tgz root@8.211.188.59:/opt/devmind-ai/
+```
+
+```bash
+tar -xzf models-bge-m3.tgz -C /opt/devmind-ai/internal_kb_qa/models/
+```
+
+---
+
+### 3.4.5 校验是否下全
+
+```bash
+ls -lh internal_kb_qa/models/bge-m3/pytorch_model.bin \
+       internal_kb_qa/models/bge-m3/config.json
+ls -lh internal_kb_qa/models/bge-reranker-v2-m3/model.safetensors \
+       internal_kb_qa/models/bge-reranker-v2-m3/config.json
+```
+
+缺 `model.safetensors` / `pytorch_model.bin` 即未下全，删目录后按 §3.4.2 重下，或改用 §3.4.4 本机上传。
+
+### 3.4.6 常见问题
+
+| 现象 | 原因 | 处理 |
+|------|------|------|
+| 速度约 1MB/s、进度几乎不动 | 未设镜像 / 直连 HF 官方 | 改用 `--source modelscope`（§3.4.2） |
+| `Distant resource does not seem to be on huggingface.co` | HF 镜像与当前 hub 版本不兼容或半截缓存 | **删目录**后用 ModelScope：`--source modelscope --force` |
+| `local file already exists` 但不下大文件 | 半截下载残留 | `rm -rf` 对应模型目录，加 `--force` |
+| `No module named 'internal_kb_qa'` | 不在项目目录，或用了系统 Python 3.14 | `cd /opt/devmind-ai` 后用 `uv run ...` |
+| `[FAIL] 缺少: ['pytorch_model.bin']` | 仓库已改为 safetensors，或未下完 | 新脚本接受 safetensors；不完整则 `--force` 重下 |
+| 服务器下很慢、本机网快 | 机房到 HF/镜像差 | **可选项 §3.4.4**：本地下好再上传（先测上传带宽） |
+| 本机 scp 也很慢（约 1MB/s） | 上传带宽不足 | 不要本机传模型；继续服务器 ModelScope |
+| 内存紧张 | reranker 再占约 2GB | 可只下/只传 `bge-m3`，配置里关闭精排 |
 
 ---
 
@@ -341,6 +529,9 @@ OSS_ACCESS_KEY_SECRET=<你的 RAM AccessKey Secret>
 
 # DashScope（Query 改写 / 意图分类 / RAG；建议生产配置）
 DASHSCOPE_API_KEY=<你的百炼 API Key>
+
+# T8 问答鉴权：与 JWT_SECRET 一致，工作台登录 token 可调用 /api/query、/api/stream
+SSO_MODE=jwt
 ```
 
 > 敏感凭证（`OSS_ACCESS_KEY_*`、`DASHSCOPE_API_KEY`）**只写在 `backend/.env`**，由 systemd `EnvironmentFile` 或 Docker `env_file` 注入，不要写入 `config.ini` 或提交仓库。

@@ -1,6 +1,6 @@
 // 前端常量
 
-// 默认留空：开发环境走 vite.config.js 的 /api 代理到后端 8020
+// 默认留空：开发环境走 vite.config.js 的 /api 代理到后端 8004
 // 如需直连后端，可在 front/.env 中配置 VITE_API_BASE_URL
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 

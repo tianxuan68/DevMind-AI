@@ -56,9 +56,14 @@ class Config:
         )
         self.LOG_FILE = self.config.get("logger", "log_file", fallback="logs/app.log")
 
-        self.SSO_MODE = self.config.get("security", "sso_mode", fallback="mock")
+        self.SSO_MODE = os.getenv("SSO_MODE") or self.config.get("security", "sso_mode", fallback="mock")
         self.SSO_TOKEN_HEADER = self.config.get("security", "sso_token_header", fallback="Authorization")
-        self.SSO_SECRET = self.config.get("security", "sso_secret", fallback="devmind-ai-sso-secret")
+        # 与工作台 JWT 共用密钥：优先 JWT_SECRET，便于登录态直连 /api/query、/api/stream
+        self.SSO_SECRET = (
+            os.getenv("JWT_SECRET")
+            or os.getenv("SSO_SECRET")
+            or self.config.get("security", "sso_secret", fallback="devmind-ai-sso-secret")
+        )
         self.DEFAULT_SECURITY_LEVEL = self.config.get("security", "default_security_level", fallback="team")
 
         self.TICKET_ENABLED = self.config.getboolean("ticket", "enabled", fallback=True)

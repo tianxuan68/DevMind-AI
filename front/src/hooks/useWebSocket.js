@@ -1,2 +1,3 @@
-/** WS /api/stream 流式连接 Hook，含断线重连。 */
-// TODO(T9 前端组): start/token/end/error 消息处理。
+/** WS /api/stream 流式连接工具（契约见 docs/api/接口文档.md）。 */
+
+export { streamChat, getWsBaseUrl } from "../api/qa";

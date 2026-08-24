@@ -19,7 +19,9 @@ try {
         --exclude=**/node_modules `
         --exclude=data/uploads `
         --exclude=logs `
-        backend base internal_kb_qa config.ini pyproject.toml uv.lock sql docker scripts locust_test.py
+        backend base internal_kb_qa mysql_qa rag_qa `
+        new_main.py app.py config.ini pyproject.toml uv.lock .python-version `
+        sql docker scripts locust_test.py
     if ($LASTEXITCODE -ne 0) { throw "tar failed with exit code $LASTEXITCODE" }
 }
 finally {

@@ -13,24 +13,19 @@ from openai import OpenAI
 
 from base.config import Config
 from base.logger import logger
-from internal_kb_qa.core.intent_classifier import (
-    CATEGORY_ACCESS_REQUEST,
-    CATEGORY_COMMON,
-    CATEGORY_COMPLAINT_SUGGESTION,
-    CATEGORY_INCIDENT,
-    CATEGORY_POLICY_GENERAL,
-    CATEGORY_TECH,
-    CATEGORY_TICKET_INQUIRY,
-)
+from internal_kb_qa.core.intent_classifier import CATEGORY_GENERAL, CATEGORY_TECH
 from internal_kb_qa.core.prompts import RAGPrompts
 from rag_qa.core.strategy_selector import StrategySelector
 
 # 不进入检索的类别（直接 LLM 或转人工）
+# 含 T6 二类「通用知识」+ T8 规则降级英文 slug
 _NO_SEARCH_CATEGORIES = frozenset({
-    CATEGORY_TICKET_INQUIRY,
-    CATEGORY_COMPLAINT_SUGGESTION,
-    CATEGORY_POLICY_GENERAL,
-    CATEGORY_COMMON,
+    CATEGORY_GENERAL,
+    "ticket_inquiry",
+    "complaint_suggestion",
+    "policy_general",
+    "common",
+    "chitchat",
 })
 
 _COLLOQUIAL_MAP = {
@@ -205,7 +200,13 @@ def _main() -> None:
         print(f"  rewritten_query:   {rw.rewritten_query}")
         print(f"  search_queries:    {rw.search_queries}")
 
-    for no_search_category in (CATEGORY_POLICY_GENERAL, CATEGORY_COMMON, CATEGORY_TICKET_INQUIRY, CATEGORY_COMPLAINT_SUGGESTION):
+    for no_search_category in (
+        CATEGORY_GENERAL,
+        "policy_general",
+        "common",
+        "ticket_inquiry",
+        "complaint_suggestion",
+    ):
         rw = query_rewrite("今天天气怎么样？", category=no_search_category)
         assert rw.search_queries == [], f"{no_search_category} 不应产生检索 query"
         print(f"\n{no_search_category} search_queries=[] -> PASS")

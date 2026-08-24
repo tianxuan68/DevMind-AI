@@ -23,7 +23,9 @@ zip -r "${FRONT_ZIP}" .
 
 cd "${ROOT}"
 zip -r "${BACKEND_ZIP}" \
-  backend base internal_kb_qa config.ini pyproject.toml uv.lock sql docker scripts locust_test.py \
+  backend base internal_kb_qa mysql_qa rag_qa \
+  new_main.py app.py config.ini pyproject.toml uv.lock .python-version \
+  sql docker scripts locust_test.py \
   -x "**/__pycache__/*" "**/*.pyc" "**/.venv/*" "**/node_modules/*" "**/data/uploads/*" "**/logs/*" "**/.git/*" "**/internal_kb_qa/models/*"
 
 echo ""
