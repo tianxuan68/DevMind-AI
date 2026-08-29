@@ -8,16 +8,17 @@ import os
 
 
 class Config:
-    """加载 config.ini 并暴露 MySQL/Redis/Milvus/LLM/安全/检索配置。"""
+    """加载 config.ini 并暴露 PostgreSQL/Redis/Milvus/LLM/安全/检索配置。"""
 
     def __init__(self, config_file: str = "config.ini"):
         self.config = configparser.ConfigParser()
         self.config.read(config_file, encoding="utf-8")
 
-        self.MYSQL_HOST = self.config.get("mysql", "host", fallback="localhost")
-        self.MYSQL_USER = self.config.get("mysql", "user", fallback="root")
-        self.MYSQL_PASSWORD = self.config.get("mysql", "password", fallback="")
-        self.MYSQL_DATABASE = self.config.get("mysql", "database", fallback="internal_tech_kb")
+        self.POSTGRES_HOST = self.config.get("postgresql", "host", fallback="localhost")
+        self.POSTGRES_PORT = self.config.getint("postgresql", "port", fallback=5432)
+        self.POSTGRES_USER = self.config.get("postgresql", "user", fallback="devmind")
+        self.POSTGRES_PASSWORD = self.config.get("postgresql", "password", fallback="")
+        self.POSTGRES_DB = self.config.get("postgresql", "database", fallback="internal_tech_kb")
 
         self.REDIS_HOST = self.config.get("redis", "host", fallback="localhost")
         self.REDIS_PORT = self.config.getint("redis", "port", fallback=16379)

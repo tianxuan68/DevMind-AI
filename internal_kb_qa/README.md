@@ -8,7 +8,7 @@
 | T2 多格式文档解析 | `document_loaders/`，统一入口 `load(file_path) -> list[Document]` |
 | T3 切分与向量化 | `text_splitters/`、`core/vector_store.py`、`scripts/ingest_documents.py` |
 | T4 混合检索 | `core/hybrid_search.py`，接口 `search(query, top_k, filter)` |
-| T5 FAQ 精确匹配 | `mysql_qa/` 与 `core/faq_matcher.py` |
+| T5 FAQ 精确匹配 | `postgres_qa/` 与 `core/faq_matcher.py` |
 | T6 意图分类 | `core/intent_classifier.py`，接口 `classify(query)` |
 | T7 重排与生成 | `core/reranker.py`、`core/rag_generator.py`、`core/prompts.py` |
 | T8 问答服务 API | `api/`、根目录 `app.py` |

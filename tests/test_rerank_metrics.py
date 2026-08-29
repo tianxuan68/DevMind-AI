@@ -255,7 +255,10 @@ class TestRerankLiveMetrics(unittest.TestCase):
                 for t in case["irrelevant"]
             ]
             n_relevant = len(case["relevant"])
-            ranked = rerank(case["query"], hits, top_k=TOP_K)
+            try:
+                ranked = rerank(case["query"], hits, top_k=TOP_K)
+            except (OSError, ImportError, FileNotFoundError) as exc:
+                self.skipTest(f"torch/模型环境不可用，跳过重排指标测试: {exc}")
             results.append(
                 {
                     "query": case["query"],

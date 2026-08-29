@@ -4,4 +4,4 @@
     faq_match(query: str) -> FAQHit | None
 命中即秒回，低于阈值返回 None 走 RAG 主链路。
 """
-# TODO(T5 算法组): 复用 mysql_qa 的 MySQL + BM25 检索能力。
+# TODO(T5 算法组): 复用 postgres_qa 的 PostgreSQL + BM25 检索能力。

@@ -12,6 +12,7 @@ from internal_kb_qa.document_loaders.markdown_loader import MarkdownLoader
 from internal_kb_qa.document_loaders.openapi_loader import OpenAPILoader
 from internal_kb_qa.document_loaders.pdf_loader import PDFLoader
 from internal_kb_qa.document_loaders.word_loader import WordLoader
+from internal_kb_qa.text_splitters.recursive_splitter import RecursiveSplitter
 
 
 def test_markdown_loader_preserves_code_table_and_metadata(tmp_path):
@@ -26,7 +27,11 @@ def test_markdown_loader_preserves_code_table_and_metadata(tmp_path):
     assert len(documents) == 1
     assert "uv run python app.py" in documents[0].page_content
     assert "| port | 8003 |" in documents[0].page_content
-    assert documents[0].metadata == {"source": path.name, "page": 1, "doc_type": "runbook"}
+    assert documents[0].metadata == {
+        "source": path.name,
+        "page": 1,
+        "doc_type": "runbook",
+    }
 
 
 def test_pdf_loader_returns_one_document_per_non_empty_page(tmp_path):
@@ -112,7 +117,12 @@ def test_openapi_loader_formats_paths_parameters_and_responses(tmp_path):
                     },
                     "/users/{user_id}": {
                         "parameters": [
-                            {"name": "user_id", "in": "path", "required": True, "schema": {"type": "string"}}
+                            {
+                                "name": "user_id",
+                                "in": "path",
+                                "required": True,
+                                "schema": {"type": "string"},
+                            }
                         ],
                         "get": {
                             "description": "Get one user",
@@ -164,3 +174,18 @@ def test_openapi_loader_reports_invalid_json(tmp_path):
     with pytest.raises(json.JSONDecodeError):
         OpenAPILoader().load(str(path))
 
+
+def test_recursive_splitter_preserves_metadata():
+    from langchain_core.documents import Document
+
+    chunks = RecursiveSplitter(chunk_size=24, chunk_overlap=4).split(
+        [
+            Document(
+                page_content="第一段内容很长，需要切分。\n\n第二段也需要保留来源信息。",
+                metadata={"page": 3},
+            )
+        ]
+    )
+
+    assert len(chunks) >= 2
+    assert all(chunk.metadata["page"] == 3 for chunk in chunks)

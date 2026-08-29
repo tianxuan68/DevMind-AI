@@ -1,11 +1,15 @@
-"""通用递归/标题层级切分（T3）。
+"""通用递归切分。"""
 
-参考：rag_qa/edu_text_spliter/edu_chinese_recursive_text_splitter.py
-元数据：team、system、version、last_updated、security_level 必填。
-"""
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
 class RecursiveSplitter:
-    # TODO(T3 算法组): RecursiveCharacterTextSplitter + 标题层级切分。
+    def __init__(self, chunk_size: int = 1200, chunk_overlap: int = 150):
+        self._splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            separators=["\n## ", "\n# ", "\n\n", "\n", "。", "；", " ", ""],
+        )
+
     def split(self, documents):
-        raise NotImplementedError
+        return self._splitter.split_documents(documents)

@@ -18,8 +18,13 @@ from openai import OpenAI
 
 from base.config import Config
 from base.logger import logger
+from internal_kb_qa.core.confidence import evaluate_confidence, select_evidence
 from internal_kb_qa.core.hit import Hit
-from internal_kb_qa.core.intent_classifier import CATEGORY_GENERAL, CATEGORY_TECH, classify
+from internal_kb_qa.core.intent_classifier import (
+    CATEGORY_GENERAL,
+    CATEGORY_TECH,
+    classify,
+)
 from internal_kb_qa.core.prompts import RAGPrompts
 from internal_kb_qa.core.query_rewrite import RewrittenQuery, query_rewrite
 from internal_kb_qa.core.search_strategy import SearchStrategy, build_search_strategy
@@ -75,12 +80,6 @@ def _build_context(hits: list[Hit]) -> str:
         page_str = f", 第{page}页" if page else ""
         blocks.append(f"[文档{i}: {title}{page_str}]\n{hit.text}")
     return "\n\n".join(blocks)
-
-
-def _compute_confidence(hits: list[Hit]) -> float:
-    if not hits:
-        return 0.0
-    return sum(h.score for h in hits) / len(hits)
 
 
 def _merge_hits(all_hits: list[Hit]) -> list[Hit]:
@@ -190,7 +189,7 @@ def _run_rag_pipeline(
 
         hits = rerank(query, hits, top_k=conf.RERANK_TOP_K)
 
-    return hits, rewritten, strategy
+    return select_evidence(hits), rewritten, strategy
 
 
 def rag_answer(
@@ -227,10 +226,11 @@ def rag_answer(
             category=category, advanced_strategy=advanced,
         )
 
-    confidence = _compute_confidence(hits)
+    confidence_result = evaluate_confidence(hits)
+    confidence = confidence_result.score
     sources = _hits_to_sources(hits)
 
-    if confidence < conf.CONFIDENCE_THRESHOLD:
+    if confidence_result.level == "low":
         return RAGResult(
             answer="根据当前知识库，未找到足够置信度的信息，建议转人工处理。",
             sources=sources, confidence=confidence, need_human=True,
@@ -277,7 +277,7 @@ def rag_answer_stream(
             yield token
         return
 
-    hits, rewritten, strategy = _run_rag_pipeline(query, history, category)
+    hits, _rewritten, strategy = _run_rag_pipeline(query, history, category)
 
     if strategy and strategy.strategy == "none":
         yield "该问题不在知识库服务范围内，建议转人工处理。"
@@ -287,8 +287,8 @@ def rag_answer_stream(
         yield "根据当前知识库，未找到足够信息回答该问题，建议转人工处理。"
         return
 
-    confidence = _compute_confidence(hits)
-    if confidence < conf.CONFIDENCE_THRESHOLD:
+    confidence_result = evaluate_confidence(hits)
+    if confidence_result.level == "low":
         yield "根据当前知识库，未找到足够置信度的信息，建议转人工处理。"
         return
 
@@ -309,8 +309,6 @@ def prepare_rag_context(
     category: str | None = None,
 ) -> tuple[list[Hit], list[Source], float, bool, str]:
     """流式生成前预检索，供 T8 返回 sources/confidence/advanced_strategy。"""
-    conf = Config()
-
     if category is None:
         category = classify(query).category
 
@@ -326,8 +324,9 @@ def prepare_rag_context(
     if not hits:
         return [], [], 0.0, True, advanced
 
-    confidence = _compute_confidence(hits)
-    need_human = confidence < conf.CONFIDENCE_THRESHOLD
+    confidence_result = evaluate_confidence(hits)
+    confidence = confidence_result.score
+    need_human = confidence_result.level == "low"
     return hits, _hits_to_sources(hits), confidence, need_human, advanced
 
 

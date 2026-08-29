@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from threading import Lock
 
 import torch
 from FlagEmbedding import FlagReranker
@@ -71,6 +72,7 @@ class Reranker:
     """bge-reranker-v2-m3 精排器（单例懒加载）。"""
 
     _instance: Reranker | None = None
+    _instance_lock = Lock()
 
     def __init__(self):
         conf = Config()
@@ -82,12 +84,15 @@ class Reranker:
             model_path,
             use_fp16=(self.device == "cuda"),
         )
+        self._inference_lock = Lock()
         _patch_tokenizer_prepare_for_model(self._model)
 
     @classmethod
     def get_instance(cls) -> Reranker:
         if cls._instance is None:
-            cls._instance = cls()
+            with cls._instance_lock:
+                if cls._instance is None:
+                    cls._instance = cls()
         return cls._instance
 
     def rerank(
@@ -105,7 +110,8 @@ class Reranker:
             return hits[:top_k]
 
         pairs = [[query, hit.text] for hit in hits]
-        scores = self._model.compute_score(pairs, normalize=True)
+        with self._inference_lock:
+            scores = self._model.compute_score(pairs, normalize=True)
 
         if isinstance(scores, (int, float)):
             scores = [scores]

@@ -1,0 +1,35 @@
+- main [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic "DevMind AI" [ref=e6]:
+        - generic [ref=e13]:
+          - text: DevMind AI
+          - generic [ref=e14]: INTELLIGENT DEV PARTNER
+      - heading "登录 DevMind AI" [level=1] [ref=e15]
+      - paragraph [ref=e16]: 访问企业内部技术知识工作空间
+    - generic [ref=e17]:
+      - generic [ref=e18]:
+        - text: 账号 / 手机号
+        - textbox "账号 / 手机号" [ref=e19]:
+          - /placeholder: 请输入账号或手机号
+          - text: codex_ui_test
+      - generic [ref=e20]:
+        - text: 密码
+        - generic [ref=e21]:
+          - textbox "密码 显示密码" [ref=e22]:
+            - /placeholder: 请输入密码
+            - text: DevMind123
+          - button "显示密码" [ref=e23] [cursor=pointer]
+      - generic [ref=e27]:
+        - generic [ref=e28]:
+          - checkbox "记住登录状态" [ref=e29]
+          - text: 记住登录状态
+        - button "忘记密码？" [ref=e30] [cursor=pointer]
+      - button "登录" [ref=e31] [cursor=pointer]
+    - generic [ref=e34]:
+      - text: 还没有账号？
+      - button "注册账号" [ref=e35] [cursor=pointer]
+    - generic [ref=e36]:
+      - generic [ref=e37]: 其他登录方式
+      - button "手机验证码登录" [ref=e38] [cursor=pointer]
+  - generic [ref=e41]: © 2026 DevMind AI 隐私政策 · 用户协议

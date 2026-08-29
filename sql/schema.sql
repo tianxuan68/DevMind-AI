@@ -1,179 +1,342 @@
--- =============================================================================
--- DevMind-AI 企业内部技术知识库智能问答系统 · 数据库建库脚本
---
--- 依据：docs/企业内部技术知识库智能问答系统-任务分工.md
---   T5  高频技术 FAQ 精确匹配（MySQL + BM25）
---   T8  问答服务 API（会话历史 / 用户反馈 / 转人工工单）
---   T1  文档元数据登记（版本管理与失效标记）
---   T11 权限隔离验证（用户-团队-权限映射，用于测试账号）
---
--- 参考基线：E:/study_project/Itcast_qa_system（jpkb / conversations 表）
---
--- 使用方式：
---   mysql -u root -p < schema.sql
---   或在 MySQL 客户端中执行：SOURCE E:/tianxuan/DevMind-AI/sql/schema.sql;
---
--- 说明：数据库名 internal_tech_kb 与 config.ini 中 [mysql] database 保持一致；
---       本脚本不包含任何真实数据与账号口令，密码请通过环境变量/配置注入。
--- =============================================================================
+-- DevMind AI PostgreSQL 16 schema
+-- 业务事实存 PostgreSQL，原始文件存 MinIO，向量索引存 Milvus。
 
-CREATE DATABASE IF NOT EXISTS internal_tech_kb
-    DEFAULT CHARACTER SET utf8mb4
-    DEFAULT COLLATE utf8mb4_general_ci;
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-USE internal_tech_kb;
+CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
-SET NAMES utf8mb4;
+CREATE TABLE IF NOT EXISTS organizations (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    name varchar(128) NOT NULL,
+    slug varchar(64) NOT NULL UNIQUE,
+    sso_provider varchar(64),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
 
--- -----------------------------------------------------------------------------
--- T5: 高频技术 FAQ 表（BM25 精确/模糊匹配，命中即秒回，不进 LLM）
--- 字段对齐 internal_kb_qa/data/faq/README.md 中的 FAQ 表结构
--- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS faq (
-    id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-    question        VARCHAR(1000)   NOT NULL COMMENT '标准问题（用户高频问法）',
-    keywords        VARCHAR(2000)   DEFAULT NULL COMMENT '关键词/同义词，空格分隔，便于 BM25',
-    answer          TEXT            NOT NULL COMMENT '标准答案',
-    doc_source      VARCHAR(1000)   DEFAULT NULL COMMENT '答案出处（文档名/链接）',
-    category        VARCHAR(100)    DEFAULT NULL COMMENT '类别：环境配置/权限申请/常见报错/流程规范等',
-    team            VARCHAR(100)    DEFAULT NULL COMMENT '所属团队：infra/backend/frontend/data/ops',
-    system_name     VARCHAR(100)    DEFAULT NULL COMMENT '所属系统/服务名（避开 MySQL 保留字 SYSTEM）',
-    security_level  VARCHAR(20)     NOT NULL DEFAULT 'team' COMMENT '权限等级：public/team/confidential',
-    version         VARCHAR(50)     DEFAULT NULL COMMENT '版本号',
-    is_active       TINYINT(1)      NOT NULL DEFAULT 1 COMMENT '是否有效（过期文档置 0，不再参与匹配）',
+INSERT INTO organizations (id, name, slug)
+VALUES ('00000000-0000-0000-0000-000000000001', 'DevMind AI 默认组织', 'default')
+ON CONFLICT (id) DO NOTHING;
 
-    last_updated    DATETIME        DEFAULT NULL COMMENT '内容最后更新时间（对应文档更新时间）',
-    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE KEY uniq_faq_question (question(255)) COMMENT '标准问题去重，禁止重复写入',
-    KEY idx_faq_team (team),
-    KEY idx_faq_category (category),
-    KEY idx_faq_active (is_active)
-    ) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COMMENT = 'T5 高频技术 FAQ：标准问题、标准答案、文档出处、类别、团队';
-
--- -----------------------------------------------------------------------------
--- T1/T2: 文档元数据登记表（知识库文档清单，版本管理与失效标记）
--- 注意：文档向量与 chunk 内容存 Milvus，本表只存元数据
--- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS documents (
-    id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-    doc_source      VARCHAR(1000)   NOT NULL COMMENT '来源文件/页面（Confluence URL、Git 路径等，避开 MySQL 保留字 SOURCE）',
-    doc_type        VARCHAR(50)     NOT NULL COMMENT '文档类型：wiki/api/runbook/faq/report',
-    team            VARCHAR(100)    DEFAULT NULL COMMENT '所属团队',
-    system_name     VARCHAR(100)    DEFAULT NULL COMMENT '所属系统/服务名（避开 MySQL 保留字 SYSTEM）',
-    version         VARCHAR(50)     DEFAULT NULL COMMENT '文档版本',
-    security_level  VARCHAR(20)     NOT NULL DEFAULT 'team' COMMENT '权限等级：public/team/confidential',
-    status          VARCHAR(20)     NOT NULL DEFAULT 'active' COMMENT 'active 生效 / deprecated 已失效',
-    chunk_count     INT UNSIGNED    DEFAULT 0 COMMENT '切分入库的 chunk 数量',
-    last_updated    DATETIME        DEFAULT NULL COMMENT '文档源最后更新时间',
-    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE KEY uniq_document (doc_source(255), doc_type) COMMENT '同一来源同一类型文档唯一',
-    KEY idx_documents_team (team, security_level),
-    KEY idx_documents_status (status)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COMMENT = 'T1 文档元数据：team/system/security_level/version/失效标记';
-
--- -----------------------------------------------------------------------------
--- T8: 会话历史表（参考基线 new_main.py 中的 conversations 表，扩展 user/team）
--- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS conversations (
-    id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-    session_id  VARCHAR(36)     NOT NULL COMMENT '会话 ID（/api/create_session 生成的 UUID）',
-    user        VARCHAR(64)     DEFAULT NULL COMMENT '提问用户（SSO 账号）',
-    team        VARCHAR(100)    DEFAULT NULL COMMENT '用户团队',
-    question    TEXT            NOT NULL COMMENT '用户问题',
-    answer      MEDIUMTEXT      NOT NULL COMMENT '回答内容',
-    timestamp   DATETIME        NOT NULL COMMENT '时间',
-    PRIMARY KEY (id),
-    KEY idx_conversations_session (session_id) COMMENT '按会话查询最近 N 轮历史',
-    KEY idx_conversations_user (user),
-    KEY idx_conversations_time (timestamp)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COMMENT = 'T8 会话历史：保留最近 N 轮对话供指代补全';
-
--- -----------------------------------------------------------------------------
--- T8: 用户反馈表（/api/feedback，点赞点踩、转人工、反馈回写知识库）
--- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS feedback (
-    id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-    session_id  VARCHAR(36)     NOT NULL COMMENT '会话 ID',
-    user        VARCHAR(64)     DEFAULT NULL COMMENT '反馈用户',
-    team        VARCHAR(100)    DEFAULT NULL COMMENT '用户团队',
-    user_query  TEXT            NOT NULL COMMENT '对应的问题（避开 MySQL 保留字 QUERY）',
-    rating      TINYINT         DEFAULT NULL COMMENT '1-5 评分',
-    comment     TEXT            DEFAULT NULL COMMENT '文字反馈',
-    need_human  TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否要求人工处理',
-    ticket_id   VARCHAR(64)     DEFAULT NULL COMMENT '关联工单号（need_human=1 时回填）',
-    status      VARCHAR(20)     NOT NULL DEFAULT 'new' COMMENT '反馈处理状态：new/reviewed/merged（已回写知识库）',
-    created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    KEY idx_feedback_session (session_id),
-    KEY idx_feedback_user (user),
-    KEY idx_feedback_status (status),
-    KEY idx_feedback_created (created_at)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COMMENT = 'T8 用户反馈：差评/转人工问题每周复核后回写 FAQ 与知识库';
-
--- -----------------------------------------------------------------------------
--- T8: 转人工工单表（低置信度/投诉/故障上报 100% 转人工兜底）
--- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS tickets (
-    id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-    ticket_no   VARCHAR(64)     NOT NULL COMMENT '工单号（对接外部工单系统时同步）',
-    session_id  VARCHAR(36)     NOT NULL COMMENT '会话 ID',
-    user        VARCHAR(64)     DEFAULT NULL COMMENT '提问用户',
-    team        VARCHAR(100)    DEFAULT NULL COMMENT '用户团队',
-    user_query  TEXT            NOT NULL COMMENT '问题内容（避开 MySQL 保留字 QUERY）',
-    reason      VARCHAR(50)     NOT NULL COMMENT '转人工原因：low_confidence/complaint/incident/user_request',
-    priority    VARCHAR(20)     NOT NULL DEFAULT 'normal' COMMENT '优先级：low/normal/high/urgent',
-    status      VARCHAR(20)     NOT NULL DEFAULT 'pending' COMMENT 'pending/processing/done/closed',
-    assignee    VARCHAR(64)     DEFAULT NULL COMMENT '处理人',
-    created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    resolved_at DATETIME        DEFAULT NULL COMMENT '解决时间',
-    PRIMARY KEY (id),
-    UNIQUE KEY uniq_ticket_no (ticket_no),
-    KEY idx_tickets_session (session_id),
-    KEY idx_tickets_status (status),
-    KEY idx_tickets_team (team),
-    KEY idx_tickets_created (created_at)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COMMENT = 'T8 转人工工单：低置信度/投诉/故障上报兜底队列';
-
--- -----------------------------------------------------------------------------
--- T8/T11: 用户与团队权限映射表（SSO 本地缓存 / 权限隔离验证测试账号）
--- 注意：生产环境以 SSO 为准，本表用于本地映射与验收测试（越权检索命中数=0）
--- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
-    id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-    username        VARCHAR(64)     NOT NULL COMMENT '登录账号',
-    password_hash   VARCHAR(255)    NOT NULL COMMENT '密码哈希（PBKDF2-SHA256）',
-    nickname        VARCHAR(100)    DEFAULT NULL COMMENT '昵称/姓名',
-    phone           VARCHAR(20)     DEFAULT NULL COMMENT '手机号（登录/验证码）',
-    team            VARCHAR(100)    DEFAULT 'default' COMMENT '所属团队：infra/backend/frontend/data/ops',
-    security_level  VARCHAR(20)     NOT NULL DEFAULT 'team' COMMENT '最高可见权限：public/team/confidential',
-    is_active       TINYINT(1)      NOT NULL DEFAULT 1,
-    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE KEY uniq_username (username),
-    UNIQUE KEY uniq_phone (phone),
-    KEY idx_users_team (team)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COMMENT = 'T8 用户-团队-权限映射：本地注册登录 + 权限隔离验证';
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id uuid NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES organizations(id),
+    username varchar(64) NOT NULL UNIQUE,
+    password_hash text NOT NULL,
+    nickname varchar(100),
+    email varchar(320),
+    phone varchar(20) UNIQUE,
+    team varchar(100) NOT NULL DEFAULT 'default',
+    security_level varchar(20) NOT NULL DEFAULT 'team' CHECK (security_level IN ('public', 'team', 'confidential')),
+    status varchar(16) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'disabled', 'locked')),
+    is_active boolean NOT NULL DEFAULT true,
+    failed_login_count smallint NOT NULL DEFAULT 0 CHECK (failed_login_count >= 0),
+    locked_until timestamptz,
+    last_failed_login_at timestamptz,
+    last_login_at timestamptz,
+    email_verified_at timestamptz,
+    phone_verified_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (organization_id, email)
+);
+CREATE INDEX IF NOT EXISTS idx_users_org_status ON users (organization_id, status);
+CREATE INDEX IF NOT EXISTS idx_users_locked_until ON users (locked_until) WHERE status='locked';
+CREATE INDEX IF NOT EXISTS idx_users_team ON users (organization_id, team);
 
--- =============================================================================
--- 建库完成。后续数据写入脚本：
---   FAQ 导入:   internal_kb_qa/scripts/build_faq.py -> mysql_qa/db/mysql_client.py
---   文档入库:   internal_kb_qa/scripts/ingest_documents.py（documents 表 + Milvus）
--- =============================================================================
+CREATE TABLE IF NOT EXISTS user_profiles (
+    user_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    organization_id uuid NOT NULL REFERENCES organizations(id),
+    display_name varchar(64) NOT NULL,
+    avatar_url text,
+    gender varchar(16) NOT NULL DEFAULT 'unspecified' CHECK (gender IN ('male', 'female', 'unspecified')),
+    birth_date date,
+    department_name varchar(128),
+    job_title varchar(128),
+    employee_no varchar(64),
+    joined_at date,
+    bio varchar(500),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (organization_id, employee_no)
+);
+
+CREATE TABLE IF NOT EXISTS auth_refresh_tokens (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash text NOT NULL UNIQUE,
+    device_name varchar(160),
+    ip_hash varchar(128),
+    expires_at timestamptz NOT NULL,
+    revoked_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_active ON auth_refresh_tokens (user_id, expires_at) WHERE revoked_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS knowledge_bases (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id uuid NOT NULL REFERENCES organizations(id),
+    name varchar(160) NOT NULL,
+    description text NOT NULL DEFAULT '',
+    status varchar(16) NOT NULL DEFAULT 'ready' CHECK (status IN ('creating', 'ready', 'indexing', 'failed', 'archived', 'disabled', 'deleting')),
+    document_count integer NOT NULL DEFAULT 0 CHECK (document_count >= 0),
+    created_by uuid REFERENCES users(id),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    deleted_at timestamptz,
+    UNIQUE (organization_id, name)
+);
+
+INSERT INTO knowledge_bases (id, organization_id, name, description)
+VALUES ('00000000-0000-0000-0000-000000000101', '00000000-0000-0000-0000-000000000001', '默认知识库', '本地开发与迁移兼容知识库')
+ON CONFLICT (id) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS knowledge_base_members (
+    knowledge_base_id uuid NOT NULL REFERENCES knowledge_bases(id) ON DELETE CASCADE,
+    user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role varchar(16) NOT NULL CHECK (role IN ('viewer', 'editor', 'admin')),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (knowledge_base_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS documents (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    knowledge_base_id uuid NOT NULL DEFAULT '00000000-0000-0000-0000-000000000101' REFERENCES knowledge_bases(id),
+    name varchar(500) NOT NULL DEFAULT '',
+    doc_source text NOT NULL,
+    source_type varchar(32) NOT NULL DEFAULT 'file',
+    doc_type varchar(50) NOT NULL DEFAULT 'document',
+    storage_key text,
+    mime_type varchar(160),
+    size_bytes bigint CHECK (size_bytes IS NULL OR size_bytes >= 0),
+    team varchar(100),
+    system_name varchar(100),
+    version varchar(50),
+    security_level varchar(20) NOT NULL DEFAULT 'team' CHECK (security_level IN ('public', 'team', 'confidential')),
+    status varchar(24) NOT NULL DEFAULT 'uploaded' CHECK (status IN ('uploaded', 'parsing', 'chunking', 'embedding', 'indexing', 'ready', 'failed', 'active', 'deprecated', 'deleted')),
+    checksum varchar(128),
+    chunk_count integer NOT NULL DEFAULT 0 CHECK (chunk_count >= 0),
+    metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+    error_code varchar(64),
+    error_message text,
+    last_updated timestamptz,
+    created_by uuid REFERENCES users(id),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    deleted_at timestamptz,
+    UNIQUE (knowledge_base_id, doc_source, doc_type)
+);
+CREATE INDEX IF NOT EXISTS idx_documents_kb_status ON documents (knowledge_base_id, status, created_at DESC) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_documents_checksum ON documents (knowledge_base_id, checksum) WHERE checksum IS NOT NULL AND deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_documents_metadata ON documents USING gin (metadata);
+
+CREATE TABLE IF NOT EXISTS document_tasks (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id uuid NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    task_type varchar(24) NOT NULL CHECK (task_type IN ('ingest', 'reindex', 'delete')),
+    status varchar(16) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'running', 'retry_wait', 'completed', 'failed', 'dead')),
+    progress smallint NOT NULL DEFAULT 0 CHECK (progress BETWEEN 0 AND 100),
+    attempt_count smallint NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+    max_attempts smallint NOT NULL DEFAULT 3 CHECK (max_attempts > 0),
+    available_at timestamptz NOT NULL DEFAULT now(),
+    heartbeat_at timestamptz,
+    lease_expires_at timestamptz,
+    worker_id varchar(128),
+    timeout_seconds integer NOT NULL DEFAULT 1800 CHECK (timeout_seconds > 0),
+    error_code varchar(64),
+    error_message text,
+    started_at timestamptz,
+    completed_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_document_tasks_document_created ON document_tasks (document_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_document_tasks_ready ON document_tasks (available_at, created_at) WHERE status IN ('pending', 'retry_wait');
+CREATE INDEX IF NOT EXISTS idx_document_tasks_lease ON document_tasks (lease_expires_at) WHERE status='running';
+CREATE UNIQUE INDEX IF NOT EXISTS uq_document_tasks_active ON document_tasks (document_id) WHERE status IN ('pending', 'running', 'retry_wait');
+
+CREATE TABLE IF NOT EXISTS document_chunks (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id uuid NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    chunk_no integer NOT NULL CHECK (chunk_no >= 0),
+    content text NOT NULL,
+    content_hash varchar(128) NOT NULL,
+    location_label varchar(160),
+    token_count integer CHECK (token_count IS NULL OR token_count >= 0),
+    milvus_pk varchar(128),
+    metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (document_id, chunk_no)
+);
+CREATE INDEX IF NOT EXISTS idx_chunks_document ON document_chunks (document_id, chunk_no);
+
+CREATE TABLE IF NOT EXISTS faq (
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    organization_id uuid NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES organizations(id),
+    question varchar(1000) NOT NULL,
+    keywords text,
+    answer text NOT NULL,
+    doc_source text,
+    category varchar(100),
+    team varchar(100),
+    system_name varchar(100),
+    security_level varchar(20) NOT NULL DEFAULT 'team' CHECK (security_level IN ('public', 'team', 'confidential')),
+    version varchar(50),
+    is_active boolean NOT NULL DEFAULT true,
+    last_updated timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (organization_id, question)
+);
+CREATE INDEX IF NOT EXISTS idx_faq_filters ON faq (organization_id, team, category) WHERE is_active = true;
+
+CREATE TABLE IF NOT EXISTS chat_sessions (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id uuid NOT NULL REFERENCES organizations(id),
+    user_id uuid NOT NULL REFERENCES users(id),
+    title varchar(200) NOT NULL DEFAULT '',
+    knowledge_base_ids uuid[] NOT NULL DEFAULT '{}',
+    last_message_at timestamptz NOT NULL DEFAULT now(),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    deleted_at timestamptz
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_recent ON chat_sessions (user_id, last_message_at DESC) WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id uuid NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+    parent_message_id uuid REFERENCES chat_messages(id),
+    role varchar(16) NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+    content text NOT NULL DEFAULT '',
+    mode varchar(24) NOT NULL DEFAULT 'tech' CHECK (mode IN ('tech', 'troubleshoot', 'summarize')),
+    status varchar(16) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'running', 'completed', 'failed', 'cancelled')),
+    confidence varchar(8) CHECK (confidence IN ('low', 'medium', 'high')),
+    citation_count integer NOT NULL DEFAULT 0 CHECK (citation_count >= 0),
+    model varchar(128),
+    usage jsonb NOT NULL DEFAULT '{}'::jsonb,
+    error_code varchar(64),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    completed_at timestamptz
+);
+CREATE INDEX IF NOT EXISTS idx_messages_session_created ON chat_messages (session_id, created_at);
+
+CREATE TABLE IF NOT EXISTS message_citations (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    message_id uuid NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
+    chunk_id uuid NOT NULL REFERENCES document_chunks(id),
+    rank smallint NOT NULL CHECK (rank > 0),
+    score numeric(6,5) NOT NULL CHECK (score BETWEEN 0 AND 1),
+    excerpt text NOT NULL,
+    claim text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (message_id, rank)
+);
+
+CREATE TABLE IF NOT EXISTS message_favorites (
+    user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    message_id uuid NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, message_id)
+);
+CREATE INDEX IF NOT EXISTS idx_message_favorites_user_recent
+    ON message_favorites (user_id, created_at DESC, message_id DESC);
+
+CREATE TABLE IF NOT EXISTS support_tickets (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    ticket_no varchar(64) NOT NULL UNIQUE,
+    session_id uuid REFERENCES chat_sessions(id),
+    user_id uuid REFERENCES users(id),
+    reason varchar(50) NOT NULL,
+    priority varchar(20) NOT NULL DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+    status varchar(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'done', 'closed')),
+    assignee varchar(128),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    resolved_at timestamptz
+);
+
+CREATE TABLE IF NOT EXISTS message_feedback (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    message_id uuid NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
+    user_id uuid NOT NULL REFERENCES users(id),
+    rating varchar(16) NOT NULL CHECK (rating IN ('up', 'down', 'handoff')),
+    reason varchar(100),
+    comment text,
+    ticket_id uuid REFERENCES support_tickets(id),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (message_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_preferences (
+    user_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    default_knowledge_base_ids uuid[] NOT NULL DEFAULT '{}',
+    default_mode varchar(24) NOT NULL DEFAULT 'tech' CHECK (default_mode IN ('tech', 'troubleshoot', 'summarize')),
+    locale varchar(16) NOT NULL DEFAULT 'zh-CN',
+    timezone varchar(64) NOT NULL DEFAULT 'Asia/Shanghai',
+    answer_style varchar(16) NOT NULL DEFAULT 'balanced' CHECK (answer_style IN ('concise', 'balanced', 'detailed')),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS retrieval_runs (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    message_id uuid REFERENCES chat_messages(id) ON DELETE CASCADE,
+    user_id uuid REFERENCES users(id),
+    query text NOT NULL,
+    rewritten_query text,
+    top_k integer NOT NULL CHECK (top_k > 0),
+    rerank_top_n integer NOT NULL CHECK (rerank_top_n > 0),
+    retrieved_count integer NOT NULL DEFAULT 0 CHECK (retrieved_count >= 0),
+    reranked_count integer NOT NULL DEFAULT 0 CHECK (reranked_count >= 0),
+    latency_ms integer CHECK (latency_ms IS NULL OR latency_ms >= 0),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS retrieval_results (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    retrieval_run_id uuid NOT NULL REFERENCES retrieval_runs(id) ON DELETE CASCADE,
+    chunk_id uuid NOT NULL REFERENCES document_chunks(id),
+    stage varchar(16) NOT NULL CHECK (stage IN ('retrieve', 'rerank')),
+    rank integer NOT NULL CHECK (rank > 0),
+    score numeric(8,7) NOT NULL,
+    UNIQUE (retrieval_run_id, stage, rank)
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id uuid NOT NULL REFERENCES organizations(id),
+    user_id uuid REFERENCES users(id),
+    action varchar(128) NOT NULL,
+    resource_type varchar(64) NOT NULL,
+    resource_id varchar(128),
+    request_id varchar(128),
+    ip_hash varchar(128),
+    metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_audit_org_created ON audit_logs (organization_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_metadata ON audit_logs USING gin (metadata);
+
+DROP TRIGGER IF EXISTS trg_organizations_updated_at ON organizations;
+CREATE TRIGGER trg_organizations_updated_at BEFORE UPDATE ON organizations FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+DROP TRIGGER IF EXISTS trg_users_updated_at ON users;
+CREATE TRIGGER trg_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+DROP TRIGGER IF EXISTS trg_knowledge_bases_updated_at ON knowledge_bases;
+CREATE TRIGGER trg_knowledge_bases_updated_at BEFORE UPDATE ON knowledge_bases FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+DROP TRIGGER IF EXISTS trg_documents_updated_at ON documents;
+CREATE TRIGGER trg_documents_updated_at BEFORE UPDATE ON documents FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+DROP TRIGGER IF EXISTS trg_faq_updated_at ON faq;
+CREATE TRIGGER trg_faq_updated_at BEFORE UPDATE ON faq FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+DROP TRIGGER IF EXISTS trg_sessions_updated_at ON chat_sessions;
+CREATE TRIGGER trg_sessions_updated_at BEFORE UPDATE ON chat_sessions FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+DROP TRIGGER IF EXISTS trg_tickets_updated_at ON support_tickets;
+CREATE TRIGGER trg_tickets_updated_at BEFORE UPDATE ON support_tickets FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+COMMIT;
+
+-- RLS 在应用层实现每请求租户上下文后启用。当前由 Repository 强制
+-- organization_id 与 knowledge_base_members 过滤，避免未设置上下文时锁死 Worker。

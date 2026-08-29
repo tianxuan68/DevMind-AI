@@ -9,8 +9,9 @@ export default defineConfig({
     proxy: {
       // 开发时也可把 /api 代理到后端，避免跨域问题
       "/api": {
-        target: "http://127.0.0.1:8004",
+        target: "http://127.0.0.1:15200",
         changeOrigin: true,
+        ws: true,
       },
     },
   },

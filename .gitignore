@@ -253,6 +253,10 @@ internal_kb_qa/data/open_source/*
 # 本地环境与密钥
 .env
 config.local.ini
+docker/secrets/
+backups/
+docker/production.env
+docker/secrets/
 
 
 # ------------------------------------------------------------------
