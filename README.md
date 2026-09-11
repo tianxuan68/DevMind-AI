@@ -16,9 +16,6 @@ FastAPI + MySQL/BM25 + Redis + Milvus + BGE-M3 + bge-reranker-v2-m3 + DashScope 
 
 任务分工见 [docs/企业内部技术知识库智能问答系统-任务分工.md](docs/企业内部技术知识库智能问答系统-任务分工.md)。
 
-## 参考基线项目
-
-`E:\study_project\Itcast_qa_system`（黑马课程问答系统）。
 
 ## 启动
 
